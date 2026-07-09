@@ -1,0 +1,110 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
+-- CreateTable
+CREATE TABLE "Guild" (
+    "id" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "modLogEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "dmOnAction" BOOLEAN NOT NULL DEFAULT true,
+
+    CONSTRAINT "Guild_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AntinukeConfig" (
+    "guildId" TEXT NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT false,
+    "punishment" TEXT NOT NULL DEFAULT 'ban',
+    "autoRevert" BOOLEAN NOT NULL DEFAULT true,
+    "alertChannelId" TEXT,
+    "quarantineRoleId" TEXT,
+    "antiRaidEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "raidJoinCount" INTEGER NOT NULL DEFAULT 10,
+    "raidWindowSec" INTEGER NOT NULL DEFAULT 10,
+    "panicMode" BOOLEAN NOT NULL DEFAULT false,
+    "thresholds" JSONB NOT NULL DEFAULT '{}',
+
+    CONSTRAINT "AntinukeConfig_pkey" PRIMARY KEY ("guildId")
+);
+
+-- CreateTable
+CREATE TABLE "Whitelist" (
+    "id" TEXT NOT NULL,
+    "guildId" TEXT NOT NULL,
+    "targetId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "addedById" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Whitelist_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LoggingConfig" (
+    "guildId" TEXT NOT NULL,
+    "memberJoinLeave" TEXT,
+    "messageEdit" TEXT,
+    "messageDelete" TEXT,
+    "modActions" TEXT,
+    "roleChanges" TEXT,
+    "channelChanges" TEXT,
+    "voice" TEXT,
+    "serverChanges" TEXT,
+    "disabled" JSONB NOT NULL DEFAULT '[]',
+
+    CONSTRAINT "LoggingConfig_pkey" PRIMARY KEY ("guildId")
+);
+
+-- CreateTable
+CREATE TABLE "ModRole" (
+    "id" TEXT NOT NULL,
+    "guildId" TEXT NOT NULL,
+    "roleId" TEXT NOT NULL,
+
+    CONSTRAINT "ModRole_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Case" (
+    "id" TEXT NOT NULL,
+    "guildId" TEXT NOT NULL,
+    "caseNumber" INTEGER NOT NULL,
+    "type" TEXT NOT NULL,
+    "targetId" TEXT NOT NULL,
+    "moderatorId" TEXT NOT NULL,
+    "reason" TEXT NOT NULL DEFAULT 'No reason provided',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3),
+    "active" BOOLEAN NOT NULL DEFAULT true,
+
+    CONSTRAINT "Case_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Whitelist_guildId_targetId_key" ON "Whitelist"("guildId", "targetId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ModRole_guildId_roleId_key" ON "ModRole"("guildId", "roleId");
+
+-- CreateIndex
+CREATE INDEX "Case_guildId_targetId_idx" ON "Case"("guildId", "targetId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Case_guildId_caseNumber_key" ON "Case"("guildId", "caseNumber");
+
+-- AddForeignKey
+ALTER TABLE "AntinukeConfig" ADD CONSTRAINT "AntinukeConfig_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Whitelist" ADD CONSTRAINT "Whitelist_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LoggingConfig" ADD CONSTRAINT "LoggingConfig_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ModRole" ADD CONSTRAINT "ModRole_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Case" ADD CONSTRAINT "Case_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
