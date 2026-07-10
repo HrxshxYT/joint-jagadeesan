@@ -7,6 +7,7 @@ CREATE TABLE "Guild" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "modLogEnabled" BOOLEAN NOT NULL DEFAULT false,
     "dmOnAction" BOOLEAN NOT NULL DEFAULT true,
+    "muteRoleId" TEXT,
 
     CONSTRAINT "Guild_pkey" PRIMARY KEY ("id")
 );

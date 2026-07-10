@@ -12,6 +12,7 @@ model Guild {
   createdAt     DateTime        @default(now())
   modLogEnabled Boolean         @default(false)
   dmOnAction    Boolean         @default(true)
+  muteRoleId    String?
   antinuke      AntinukeConfig?
   logging       LoggingConfig?
   whitelist     Whitelist[]

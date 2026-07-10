@@ -55,6 +55,45 @@ export class ConfigService {
     this.invalidate(guildId);
   }
 
+  async updateLogging(guildId, data) {
+    await this.getGuild(guildId);
+    const row = await this.prisma.loggingConfig.upsert({
+      where: { guildId },
+      create: { guildId, ...data },
+      update: data,
+    });
+    this.invalidate(guildId);
+    return row;
+  }
+
+  async addModRole(guildId, roleId) {
+    await this.getGuild(guildId);
+    const row = await this.prisma.modRole.upsert({
+      where: { guildId_roleId: { guildId, roleId } },
+      create: { guildId, roleId },
+      update: {},
+    });
+    this.invalidate(guildId);
+    return row;
+  }
+
+  async removeModRole(guildId, roleId) {
+    await this.prisma.modRole.deleteMany({ where: { guildId, roleId } });
+    this.invalidate(guildId);
+  }
+
+  async resetGuildConfig(guildId) {
+    await this.prisma.antinukeConfig.deleteMany({ where: { guildId } });
+    await this.prisma.loggingConfig.deleteMany({ where: { guildId } });
+    await this.prisma.modRole.deleteMany({ where: { guildId } });
+    await this.prisma.whitelist.deleteMany({ where: { guildId } });
+    await this.prisma.guild.update({
+      where: { id: guildId },
+      data: { dmOnAction: true, muteRoleId: null, modLogEnabled: false },
+    });
+    this.invalidate(guildId);
+  }
+
   invalidate(guildId) {
     this.cache.delete(guildId);
   }
