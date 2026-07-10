@@ -128,6 +128,40 @@ CREATE TABLE "AutomodConfig" (
     CONSTRAINT "AutomodConfig_pkey" PRIMARY KEY ("guildId")
 );
 
+-- CreateTable
+CREATE TABLE "WelcomeConfig" (
+    "guildId" TEXT NOT NULL,
+    "welcomeEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "welcomeChannelId" TEXT,
+    "welcomeMessage" TEXT NOT NULL DEFAULT 'Welcome {mention} to **{server}**! You are member #{memberCount}.',
+    "goodbyeEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "goodbyeChannelId" TEXT,
+    "goodbyeMessage" TEXT NOT NULL DEFAULT '**{user}** has left the server.',
+
+    CONSTRAINT "WelcomeConfig_pkey" PRIMARY KEY ("guildId")
+);
+
+-- CreateTable
+CREATE TABLE "AutoRole" (
+    "id" TEXT NOT NULL,
+    "guildId" TEXT NOT NULL,
+    "roleId" TEXT NOT NULL,
+
+    CONSTRAINT "AutoRole_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ReactionRole" (
+    "id" TEXT NOT NULL,
+    "guildId" TEXT NOT NULL,
+    "channelId" TEXT NOT NULL,
+    "messageId" TEXT NOT NULL,
+    "emoji" TEXT NOT NULL,
+    "roleId" TEXT NOT NULL,
+
+    CONSTRAINT "ReactionRole_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Whitelist_guildId_targetId_key" ON "Whitelist"("guildId", "targetId");
 
@@ -146,6 +180,15 @@ CREATE INDEX "MemberInvite_guildId_inviterId_idx" ON "MemberInvite"("guildId", "
 -- CreateIndex
 CREATE UNIQUE INDEX "MemberInvite_guildId_memberId_key" ON "MemberInvite"("guildId", "memberId");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "AutoRole_guildId_roleId_key" ON "AutoRole"("guildId", "roleId");
+
+-- CreateIndex
+CREATE INDEX "ReactionRole_guildId_messageId_idx" ON "ReactionRole"("guildId", "messageId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ReactionRole_guildId_messageId_emoji_key" ON "ReactionRole"("guildId", "messageId", "emoji");
+
 -- AddForeignKey
 ALTER TABLE "AntinukeConfig" ADD CONSTRAINT "AntinukeConfig_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -163,4 +206,13 @@ ALTER TABLE "Case" ADD CONSTRAINT "Case_guildId_fkey" FOREIGN KEY ("guildId") RE
 
 -- AddForeignKey
 ALTER TABLE "AutomodConfig" ADD CONSTRAINT "AutomodConfig_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WelcomeConfig" ADD CONSTRAINT "WelcomeConfig_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AutoRole" ADD CONSTRAINT "AutoRole_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ReactionRole" ADD CONSTRAINT "ReactionRole_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

@@ -16,9 +16,12 @@ model Guild {
   antinuke      AntinukeConfig?
   automod       AutomodConfig?
   logging       LoggingConfig?
+  welcome       WelcomeConfig?
   whitelist     Whitelist[]
   modRoles      ModRole[]
   cases         Case[]
+  autoRoles     AutoRole[]
+  reactionRoles ReactionRole[]
 }
 
 model AntinukeConfig {
@@ -129,4 +132,37 @@ model AutomodConfig {
   timeoutSeconds  Int     @default(300)
   exemptRoles     Json    @default("[]")
   exemptChannels  Json    @default("[]")
+}
+
+model WelcomeConfig {
+  guildId          String  @id
+  guild            Guild   @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  welcomeEnabled   Boolean @default(false)
+  welcomeChannelId String?
+  welcomeMessage   String  @default("Welcome {mention} to **{server}**! You are member #{memberCount}.")
+  goodbyeEnabled   Boolean @default(false)
+  goodbyeChannelId String?
+  goodbyeMessage   String  @default("**{user}** has left the server.")
+}
+
+model AutoRole {
+  id      String @id @default(cuid())
+  guildId String
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  roleId  String
+
+  @@unique([guildId, roleId])
+}
+
+model ReactionRole {
+  id        String @id @default(cuid())
+  guildId   String
+  guild     Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  channelId String
+  messageId String
+  emoji     String
+  roleId    String
+
+  @@unique([guildId, messageId, emoji])
+  @@index([guildId, messageId])
 }

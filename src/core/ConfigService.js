@@ -1,4 +1,12 @@
-const INCLUDE = { antinuke: true, automod: true, logging: true, modRoles: true, whitelist: true };
+const INCLUDE = {
+  antinuke: true,
+  automod: true,
+  logging: true,
+  modRoles: true,
+  whitelist: true,
+  welcome: true,
+  autoRoles: true,
+};
 
 export class ConfigService {
   constructor(prisma) {
@@ -50,6 +58,33 @@ export class ConfigService {
     return row;
   }
 
+  async updateWelcome(guildId, data) {
+    await this.getGuild(guildId);
+    const row = await this.prisma.welcomeConfig.upsert({
+      where: { guildId },
+      create: { guildId, ...data },
+      update: data,
+    });
+    this.invalidate(guildId);
+    return row;
+  }
+
+  async addAutoRole(guildId, roleId) {
+    await this.getGuild(guildId);
+    const row = await this.prisma.autoRole.upsert({
+      where: { guildId_roleId: { guildId, roleId } },
+      create: { guildId, roleId },
+      update: {},
+    });
+    this.invalidate(guildId);
+    return row;
+  }
+
+  async removeAutoRole(guildId, roleId) {
+    await this.prisma.autoRole.deleteMany({ where: { guildId, roleId } });
+    this.invalidate(guildId);
+  }
+
   async addWhitelist(guildId, targetId, type, addedById) {
     await this.getGuild(guildId);
     const row = await this.prisma.whitelist.upsert({
@@ -98,6 +133,8 @@ export class ConfigService {
     await this.prisma.loggingConfig.deleteMany({ where: { guildId } });
     await this.prisma.modRole.deleteMany({ where: { guildId } });
     await this.prisma.whitelist.deleteMany({ where: { guildId } });
+    await this.prisma.welcomeConfig.deleteMany({ where: { guildId } });
+    await this.prisma.autoRole.deleteMany({ where: { guildId } });
     await this.prisma.guild.update({
       where: { id: guildId },
       data: { dmOnAction: true, muteRoleId: null, modLogEnabled: false },
