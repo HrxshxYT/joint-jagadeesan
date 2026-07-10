@@ -30,9 +30,11 @@ const TYPE_COLORS = {
   softban: COLORS.error,
   kick: COLORS.warn,
   timeout: COLORS.warn,
+  mute: COLORS.warn,
   warn: COLORS.warn,
   unban: COLORS.success,
   untimeout: COLORS.success,
+  unmute: COLORS.success,
 };
 
 export function buildCaseEmbed(caseRow) {
