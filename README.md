@@ -65,7 +65,17 @@ Unconfigured categories are silently skipped. Message **content** in delete/edit
 the privileged **Message Content** intent; without it, those logs show a placeholder. Channels
 are set in the config phase (`/logging` / `/config`).
 
+## Configuration & Help
+
+- `/config` — `view`, `modrole add|remove`, `dmonaction on|off`, `muterole [role]`, `reset`.
+- `/logging` — `set <category> <channel>`, `disable <category>`, `enable <category>`, `view`.
+- `/antinuke` — anti-nuke setup (see Anti-Nuke).
+- `/help` — dynamic, category-grouped command list with `/help <command>` details and autocomplete.
+
+Role-based `/mute` and `/unmute` use the mute role set via `/config muterole`.
+
 ## Status
 
-Foundation + anti-nuke + moderation + logging complete. The config & help phase (setup commands,
-`/help`) lands next.
+Phase 1 complete: foundation, anti-nuke, moderation, logging, and config/help. Later phases
+(invite tracking, auto-moderation, welcome/autorole, music, dashboard) are documented in
+`docs/superpowers/specs`.
