@@ -17,6 +17,10 @@ export default {
       }
       return;
     }
+    // Component interactions (buttons / select menus) are handled by per-message
+    // collectors inside each command, never by the global router. Ignore strays.
+    if (interaction.isButton?.() || interaction.isStringSelectMenu?.()) return;
+
     if (!interaction.isChatInputCommand()) return;
     const command = ctx.commands.get(interaction.commandName);
     if (!command) return;
