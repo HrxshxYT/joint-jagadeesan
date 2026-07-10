@@ -1,5 +1,8 @@
-export class CaseService {
+import { EventEmitter } from "node:events";
+
+export class CaseService extends EventEmitter {
   constructor(prisma) {
+    super();
     this.prisma = prisma;
   }
 
@@ -11,7 +14,7 @@ export class CaseService {
     reason = "No reason provided",
     expiresAt = null,
   }) {
-    return this.prisma.$transaction(async (tx) => {
+    const record = await this.prisma.$transaction(async (tx) => {
       const last = await tx.case.findFirst({
         where: { guildId },
         orderBy: { caseNumber: "desc" },
@@ -22,6 +25,8 @@ export class CaseService {
         data: { guildId, caseNumber, type, targetId, moderatorId, reason, expiresAt },
       });
     });
+    this.emit("caseCreated", record);
+    return record;
   }
 
   async getCase(guildId, caseNumber) {
