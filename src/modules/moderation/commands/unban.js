@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
 import { buildCaseEmbed } from "../helpers.js";
-import { errorEmbed } from "../../../lib/embeds.js";
+import { errorEmbed, warnEmbed } from "../../../lib/embeds.js";
+import { withConfirm } from "../confirm.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -15,23 +16,27 @@ export default {
   async execute(interaction, ctx) {
     const userId = interaction.options.getString("user_id");
     const reason = interaction.options.getString("reason") ?? "No reason provided";
-    try {
-      await interaction.guild.bans.remove(userId, reason);
-    } catch (err) {
-      ctx.logger.error({ err }, "unban failed");
-      await interaction.reply({
-        embeds: [errorEmbed("That user isn't banned, or I lack permission.")],
-        ephemeral: true,
-      });
-      return;
-    }
-    const record = await ctx.cases.createCase({
-      guildId: interaction.guildId,
-      type: "unban",
-      targetId: userId,
-      moderatorId: interaction.user.id,
-      reason,
+
+    await withConfirm({
+      interaction,
+      awaitFn: ctx?.awaitFn,
+      summaryEmbed: warnEmbed(`Unban \`${userId}\`?\n**Reason:** ${reason}`),
+      onConfirm: async () => {
+        try {
+          await interaction.guild.bans.remove(userId, reason);
+        } catch (err) {
+          ctx.logger.error({ err }, "unban failed");
+          return errorEmbed("That user isn't banned, or I lack permission.");
+        }
+        const record = await ctx.cases.createCase({
+          guildId: interaction.guildId,
+          type: "unban",
+          targetId: userId,
+          moderatorId: interaction.user.id,
+          reason,
+        });
+        return buildCaseEmbed(record);
+      },
     });
-    await interaction.reply({ embeds: [buildCaseEmbed(record)] });
   },
 };

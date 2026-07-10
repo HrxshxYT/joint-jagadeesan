@@ -6,6 +6,7 @@ function ctx() {
     cases: { createCase: vi.fn(async (d) => ({ caseNumber: 1, ...d })) },
     config: { getGuild: vi.fn(async () => ({ dmOnAction: false })) },
     logger: { error: vi.fn(), debug: vi.fn() },
+    awaitFn: vi.fn(async () => ({ customId: "confirm:yes:mod1", update: vi.fn(async () => {}) })),
   };
 }
 function interaction(opts) {
@@ -25,6 +26,8 @@ function interaction(opts) {
     member: { id: "mod1", roles: { highest: { position: 50 } }, guild: { ownerId: "owner" } },
     options: { getUser: () => ({ id: "t1", send: vi.fn() }), getString: (k) => opts[k] ?? null },
     reply: vi.fn(async () => {}),
+    fetchReply: vi.fn(async () => ({})),
+    editReply: vi.fn(async () => {}),
     _guild: g,
   };
 }
