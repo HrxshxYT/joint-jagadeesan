@@ -82,6 +82,28 @@ CREATE TABLE "Case" (
     CONSTRAINT "Case_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "MemberInvite" (
+    "id" TEXT NOT NULL,
+    "guildId" TEXT NOT NULL,
+    "memberId" TEXT NOT NULL,
+    "inviterId" TEXT,
+    "code" TEXT,
+    "joinedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "left" BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT "MemberInvite_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "InviteBonus" (
+    "guildId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "InviteBonus_pkey" PRIMARY KEY ("guildId","userId")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Whitelist_guildId_targetId_key" ON "Whitelist"("guildId", "targetId");
 
@@ -93,6 +115,12 @@ CREATE INDEX "Case_guildId_targetId_idx" ON "Case"("guildId", "targetId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Case_guildId_caseNumber_key" ON "Case"("guildId", "caseNumber");
+
+-- CreateIndex
+CREATE INDEX "MemberInvite_guildId_inviterId_idx" ON "MemberInvite"("guildId", "inviterId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "MemberInvite_guildId_memberId_key" ON "MemberInvite"("guildId", "memberId");
 
 -- AddForeignKey
 ALTER TABLE "AntinukeConfig" ADD CONSTRAINT "AntinukeConfig_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;

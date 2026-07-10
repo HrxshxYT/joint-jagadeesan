@@ -86,3 +86,24 @@ model Case {
   @@unique([guildId, caseNumber])
   @@index([guildId, targetId])
 }
+
+model MemberInvite {
+  id        String   @id @default(cuid())
+  guildId   String
+  memberId  String
+  inviterId String?
+  code      String?
+  joinedAt  DateTime @default(now())
+  left      Boolean  @default(false)
+
+  @@unique([guildId, memberId])
+  @@index([guildId, inviterId])
+}
+
+model InviteBonus {
+  guildId String
+  userId  String
+  amount  Int    @default(0)
+
+  @@id([guildId, userId])
+}
