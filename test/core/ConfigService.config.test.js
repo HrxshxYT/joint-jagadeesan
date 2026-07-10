@@ -28,6 +28,8 @@ function mockPrisma() {
     },
     antinukeConfig: { deleteMany: vi.fn(async () => ({ count: 1 })) },
     whitelist: { deleteMany: vi.fn(async () => ({ count: 1 })) },
+    welcomeConfig: { deleteMany: vi.fn(async () => ({ count: 1 })) },
+    autoRole: { deleteMany: vi.fn(async () => ({ count: 1 })) },
   };
 }
 
@@ -59,6 +61,8 @@ describe("ConfigService config methods", () => {
     expect(prisma.loggingConfig.deleteMany).toHaveBeenCalled();
     expect(prisma.modRole.deleteMany).toHaveBeenCalled();
     expect(prisma.whitelist.deleteMany).toHaveBeenCalled();
+    expect(prisma.welcomeConfig.deleteMany).toHaveBeenCalled();
+    expect(prisma.autoRole.deleteMany).toHaveBeenCalled();
     expect(prisma.guild.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ dmOnAction: true, muteRoleId: null }),

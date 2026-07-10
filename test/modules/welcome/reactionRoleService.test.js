@@ -16,7 +16,13 @@ describe("ReactionRoleService", () => {
   it("upserts a mapping keyed by guild+message+emoji", async () => {
     const prisma = prismaMock();
     const svc = new ReactionRoleService(prisma);
-    await svc.add({ guildId: "g1", channelId: "c1", messageId: "m1", emoji: "😀", roleId: "role1" });
+    await svc.add({
+      guildId: "g1",
+      channelId: "c1",
+      messageId: "m1",
+      emoji: "😀",
+      roleId: "role1",
+    });
     expect(prisma.reactionRole.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { guildId_messageId_emoji: { guildId: "g1", messageId: "m1", emoji: "😀" } },

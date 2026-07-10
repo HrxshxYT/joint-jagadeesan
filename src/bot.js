@@ -18,6 +18,7 @@ import { registerModLogListener } from "./modules/logging/modLog.js";
 import { InviteService } from "./modules/invites/InviteService.js";
 import { InviteCache } from "./modules/invites/InviteCache.js";
 import { AutomodState } from "./modules/automod/AutomodState.js";
+import { ReactionRoleService } from "./modules/welcome/ReactionRoleService.js";
 
 export async function startBot() {
   const env = loadEnv();
@@ -35,8 +36,15 @@ export async function startBot() {
       GatewayIntentBits.GuildVoiceStates,
       GatewayIntentBits.GuildMessages,
       GatewayIntentBits.MessageContent,
+      GatewayIntentBits.GuildMessageReactions,
     ],
-    partials: [Partials.GuildMember, Partials.User, Partials.Message, Partials.Channel],
+    partials: [
+      Partials.GuildMember,
+      Partials.User,
+      Partials.Message,
+      Partials.Channel,
+      Partials.Reaction,
+    ],
   });
 
   const modulesDir = join(dirname(fileURLToPath(import.meta.url)), "modules");
@@ -56,6 +64,7 @@ export async function startBot() {
     invites: new InviteService(prisma),
     inviteCache: new InviteCache(),
     automod: new AutomodState(),
+    reactionRoles: new ReactionRoleService(prisma),
   };
 
   bindEvents(client, listeners, context);

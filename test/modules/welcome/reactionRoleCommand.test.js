@@ -50,7 +50,11 @@ describe("/reactionrole", () => {
 
   it("add uses the custom-emoji id as the stored key", async () => {
     const c = ctx();
-    const i = interaction("add", { message_id: "m1", emoji: "<:smile:999>", role: { id: "role1" } });
+    const i = interaction("add", {
+      message_id: "m1",
+      emoji: "<:smile:999>",
+      role: { id: "role1" },
+    });
     await command.execute(i, c);
     expect(i._message.react).toHaveBeenCalledWith("999");
     expect(c.reactionRoles.add).toHaveBeenCalledWith(expect.objectContaining({ emoji: "999" }));

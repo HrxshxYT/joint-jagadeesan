@@ -92,7 +92,20 @@ anti-spam, anti-mention-spam, invite filter, link filter, mass-caps, and emoji s
 content filters (invites/links, caps, emoji) require the privileged **Message Content** intent —
 enable it in the Developer Portal; without it those filters simply never trigger.
 
+## Welcome & Onboarding
+
+- `/welcome` (Administrator) — `set-channel` / `set-message` for greetings, `goodbye-channel` /
+  `goodbye-message` for farewells, plus `disable` and `view`. Messages support the placeholders
+  `{mention}`, `{user}`, `{username}`, `{server}`, and `{memberCount}`.
+- `/autorole` (Manage Roles) — `add` / `remove` / `list` roles that are automatically granted to
+  every member on join.
+- `/reactionrole` (Manage Roles) — `add <message_id> <emoji> <role>` (run in the message's
+  channel) makes reacting with that emoji self-assign the role; `remove` and `list` manage bindings.
+  Uses the non-privileged **Guild Message Reactions** gateway intent (no Developer Portal toggle
+  required).
+
 ## Status
 
-Phase 1 complete. Phase 2: invite tracking + auto-moderation done; welcome/autorole/reaction-roles
-is the last Phase 2 subsystem.
+Phase 1 complete. **Phase 2 complete**: invite tracking, auto-moderation, and
+welcome/autorole/reaction-roles all shipped. Phase 3 (music, leveling/economy/tickets/giveaways,
+web dashboard) is next.
