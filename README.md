@@ -77,8 +77,14 @@ are set in the config phase (`/logging` / `/config`).
 
 Role-based `/mute` and `/unmute` use the mute role set via `/config muterole`.
 
+## Invite Tracking
+
+Tracks who invited whom by diffing cached invite uses on join. `/invites view [user]` shows a
+member's **total / regular / left / bonus** counts; `/invites leaderboard` ranks top inviters;
+`/invites add <user> <amount>` and `/invites reset <user>` (Manage Server) adjust bonus invites.
+Requires the bot to have **Manage Server** so it can read the invite list.
+
 ## Status
 
-Phase 1 complete: foundation, anti-nuke, moderation, logging, and config/help. Later phases
-(invite tracking, auto-moderation, welcome/autorole, music, dashboard) are documented in
-`docs/superpowers/specs`.
+Phase 1 complete. Phase 2 in progress: **invite tracking done**; auto-moderation and
+welcome/autorole/reaction-roles next.

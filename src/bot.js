@@ -15,6 +15,8 @@ import { AntinukeState } from "./modules/antinuke/AntinukeState.js";
 import { CaseService } from "./modules/moderation/CaseService.js";
 import { registerExpiryJob } from "./modules/moderation/expiry.js";
 import { registerModLogListener } from "./modules/logging/modLog.js";
+import { InviteService } from "./modules/invites/InviteService.js";
+import { InviteCache } from "./modules/invites/InviteCache.js";
 
 export async function startBot() {
   const env = loadEnv();
@@ -49,6 +51,8 @@ export async function startBot() {
     scheduler: new Scheduler({ cron, logger }),
     antinuke: new AntinukeState(),
     cases: new CaseService(prisma),
+    invites: new InviteService(prisma),
+    inviteCache: new InviteCache(),
   };
 
   bindEvents(client, listeners, context);
