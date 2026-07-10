@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
-import { successEmbed, errorEmbed } from "../../../lib/embeds.js";
+import { successEmbed, errorEmbed, warnEmbed } from "../../../lib/embeds.js";
+import { withConfirm } from "../confirm.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -21,29 +22,33 @@ export default {
       });
       return;
     }
-    try {
-      let deleted;
-      if (user) {
-        const messages = await interaction.channel.messages.fetch({ limit: 100 });
-        const mine = [...messages.values()]
-          .filter((m) => m.author?.id === user.id)
-          .slice(0, amount);
-        const result = await interaction.channel.bulkDelete(mine, true);
-        deleted = result.size ?? mine.length;
-      } else {
-        const result = await interaction.channel.bulkDelete(amount, true);
-        deleted = result.size ?? amount;
-      }
-      await interaction.reply({
-        embeds: [successEmbed(`Deleted **${deleted}** message(s).`)],
-        ephemeral: true,
-      });
-    } catch (err) {
-      ctx.logger.error({ err }, "purge failed");
-      await interaction.reply({
-        embeds: [errorEmbed("I couldn't delete messages (they may be older than 14 days).")],
-        ephemeral: true,
-      });
-    }
+
+    await withConfirm({
+      interaction,
+      awaitFn: ctx?.awaitFn,
+      summaryEmbed: warnEmbed(
+        `Delete **${amount}** message(s)${user ? ` from <@${user.id}>` : ""} in this channel?`,
+      ),
+      onConfirm: async () => {
+        try {
+          let deleted;
+          if (user) {
+            const messages = await interaction.channel.messages.fetch({ limit: 100 });
+            const mine = [...messages.values()]
+              .filter((m) => m.author?.id === user.id)
+              .slice(0, amount);
+            const result = await interaction.channel.bulkDelete(mine, true);
+            deleted = result.size ?? mine.length;
+          } else {
+            const result = await interaction.channel.bulkDelete(amount, true);
+            deleted = result.size ?? amount;
+          }
+          return successEmbed(`Deleted **${deleted}** message(s).`);
+        } catch (err) {
+          ctx.logger.error({ err }, "purge failed");
+          return errorEmbed("I couldn't delete messages (they may be older than 14 days).");
+        }
+      },
+    });
   },
 };

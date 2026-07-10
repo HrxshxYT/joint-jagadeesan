@@ -8,6 +8,8 @@ function ctx() {
     cases: { createCase: vi.fn(async (d) => ({ caseNumber: 1, ...d })) },
     config: { getGuild: vi.fn(async () => ({ dmOnAction: false })) },
     logger: { error: vi.fn(), debug: vi.fn() },
+    // auto-confirm the button prompt so the action runs in tests
+    awaitFn: vi.fn(async () => ({ customId: "confirm:yes:mod1", update: vi.fn(async () => {}) })),
   };
 }
 
@@ -40,6 +42,8 @@ function interaction(opts, g = guild()) {
       getInteger: (k) => opts[k] ?? null,
     },
     reply: vi.fn(async () => {}),
+    fetchReply: vi.fn(async () => ({})),
+    editReply: vi.fn(async () => {}),
   };
 }
 

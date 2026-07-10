@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
 import { checkHierarchy, dmTarget, buildCaseEmbed } from "../helpers.js";
-import { errorEmbed, infoEmbed } from "../../../lib/embeds.js";
+import { errorEmbed, infoEmbed, warnEmbed } from "../../../lib/embeds.js";
+import { withConfirm } from "../confirm.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -30,34 +31,36 @@ export default {
     }
 
     const guildConfig = await ctx.config.getGuild(interaction.guildId);
-    if (guildConfig.dmOnAction) {
-      await dmTarget(
-        user,
-        infoEmbed(`You were kicked from ${interaction.guild.name}`, `**Reason:** ${reason}`),
-        ctx.logger,
-      );
-    }
 
-    try {
-      await targetMember.kick(reason);
-    } catch (err) {
-      ctx.logger.error({ err }, "kick failed");
-      await interaction.reply({
-        embeds: [
-          errorEmbed("I couldn't kick that member — check my permissions and role position."),
-        ],
-        ephemeral: true,
-      });
-      return;
-    }
-
-    const record = await ctx.cases.createCase({
-      guildId: interaction.guildId,
-      type: "kick",
-      targetId: user.id,
-      moderatorId: interaction.user.id,
-      reason,
+    await withConfirm({
+      interaction,
+      awaitFn: ctx?.awaitFn,
+      summaryEmbed: warnEmbed(`Kick <@${user.id}>?\n**Reason:** ${reason}`),
+      onConfirm: async () => {
+        if (guildConfig.dmOnAction) {
+          await dmTarget(
+            user,
+            infoEmbed(`You were kicked from ${interaction.guild.name}`, `**Reason:** ${reason}`),
+            ctx.logger,
+          );
+        }
+        try {
+          await targetMember.kick(reason);
+        } catch (err) {
+          ctx.logger.error({ err }, "kick failed");
+          return errorEmbed(
+            "I couldn't kick that member — check my permissions and role position.",
+          );
+        }
+        const record = await ctx.cases.createCase({
+          guildId: interaction.guildId,
+          type: "kick",
+          targetId: user.id,
+          moderatorId: interaction.user.id,
+          reason,
+        });
+        return buildCaseEmbed(record);
+      },
     });
-    await interaction.reply({ embeds: [buildCaseEmbed(record)] });
   },
 };

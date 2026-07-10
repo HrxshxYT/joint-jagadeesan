@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
 import { checkHierarchy, dmTarget, buildCaseEmbed } from "../helpers.js";
-import { errorEmbed, infoEmbed } from "../../../lib/embeds.js";
+import { errorEmbed, infoEmbed, warnEmbed } from "../../../lib/embeds.js";
+import { withConfirm } from "../confirm.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -33,35 +34,37 @@ export default {
     }
 
     const guildConfig = await ctx.config.getGuild(interaction.guildId);
-    if (guildConfig.dmOnAction && targetMember) {
-      await dmTarget(
-        user,
-        infoEmbed(`You were banned from ${interaction.guild.name}`, `**Reason:** ${reason}`),
-        ctx.logger,
-      );
-    }
 
-    try {
-      await interaction.guild.bans.create(user.id, {
-        reason,
-        deleteMessageSeconds: deleteDays * 86400,
-      });
-    } catch (err) {
-      ctx.logger.error({ err }, "ban failed");
-      await interaction.reply({
-        embeds: [errorEmbed("I couldn't ban that user — check my permissions and role position.")],
-        ephemeral: true,
-      });
-      return;
-    }
-
-    const record = await ctx.cases.createCase({
-      guildId: interaction.guildId,
-      type: "ban",
-      targetId: user.id,
-      moderatorId: interaction.user.id,
-      reason,
+    await withConfirm({
+      interaction,
+      awaitFn: ctx?.awaitFn,
+      summaryEmbed: warnEmbed(`Ban <@${user.id}>?\n**Reason:** ${reason}`),
+      onConfirm: async () => {
+        if (guildConfig.dmOnAction && targetMember) {
+          await dmTarget(
+            user,
+            infoEmbed(`You were banned from ${interaction.guild.name}`, `**Reason:** ${reason}`),
+            ctx.logger,
+          );
+        }
+        try {
+          await interaction.guild.bans.create(user.id, {
+            reason,
+            deleteMessageSeconds: deleteDays * 86400,
+          });
+        } catch (err) {
+          ctx.logger.error({ err }, "ban failed");
+          return errorEmbed("I couldn't ban that user — check my permissions and role position.");
+        }
+        const record = await ctx.cases.createCase({
+          guildId: interaction.guildId,
+          type: "ban",
+          targetId: user.id,
+          moderatorId: interaction.user.id,
+          reason,
+        });
+        return buildCaseEmbed(record);
+      },
     });
-    await interaction.reply({ embeds: [buildCaseEmbed(record)] });
   },
 };
