@@ -84,7 +84,15 @@ member's **total / regular / left / bonus** counts; `/invites leaderboard` ranks
 `/invites add <user> <amount>` and `/invites reset <user>` (Manage Server) adjust bonus invites.
 Requires the bot to have **Manage Server** so it can read the invite list.
 
+## Auto-Moderation
+
+`/automod` (Administrator) toggles filters and picks an action (`delete` / `warn` / `timeout`):
+anti-spam, anti-mention-spam, invite filter, link filter, mass-caps, and emoji spam. Members with
+**Manage Messages**, exempt roles, and exempt channels are skipped (`/automod exempt`). The
+content filters (invites/links, caps, emoji) require the privileged **Message Content** intent —
+enable it in the Developer Portal; without it those filters simply never trigger.
+
 ## Status
 
-Phase 1 complete. Phase 2 in progress: **invite tracking done**; auto-moderation and
-welcome/autorole/reaction-roles next.
+Phase 1 complete. Phase 2: invite tracking + auto-moderation done; welcome/autorole/reaction-roles
+is the last Phase 2 subsystem.

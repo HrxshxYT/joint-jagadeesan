@@ -17,6 +17,7 @@ import { registerExpiryJob } from "./modules/moderation/expiry.js";
 import { registerModLogListener } from "./modules/logging/modLog.js";
 import { InviteService } from "./modules/invites/InviteService.js";
 import { InviteCache } from "./modules/invites/InviteCache.js";
+import { AutomodState } from "./modules/automod/AutomodState.js";
 
 export async function startBot() {
   const env = loadEnv();
@@ -33,6 +34,7 @@ export async function startBot() {
       GatewayIntentBits.GuildEmojisAndStickers,
       GatewayIntentBits.GuildVoiceStates,
       GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
     ],
     partials: [Partials.GuildMember, Partials.User, Partials.Message, Partials.Channel],
   });
@@ -53,6 +55,7 @@ export async function startBot() {
     cases: new CaseService(prisma),
     invites: new InviteService(prisma),
     inviteCache: new InviteCache(),
+    automod: new AutomodState(),
   };
 
   bindEvents(client, listeners, context);
