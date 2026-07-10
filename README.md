@@ -56,7 +56,16 @@ hierarchy-safe): `/ban`, `/unban`, `/tempban`, `/softban`, `/kick`, `/timeout`, 
 `dmOnAction` toggle (per guild) to DM the target with the reason. Role-based `/mute` arrives
 with the config phase; `/timeout` is the native equivalent today.
 
+## Logging
+
+Per-guild, per-category event logging, each routed to its own channel and independently
+toggleable: member join/leave, message delete, message edit, role changes, channel changes,
+server changes, voice state changes, and moderation actions (mirrored from the case system).
+Unconfigured categories are silently skipped. Message **content** in delete/edit logs requires
+the privileged **Message Content** intent; without it, those logs show a placeholder. Channels
+are set in the config phase (`/logging` / `/config`).
+
 ## Status
 
-Foundation + anti-nuke + moderation complete. Remaining modules (logging, config, help) land in
-follow-up plans.
+Foundation + anti-nuke + moderation + logging complete. The config & help phase (setup commands,
+`/help`) lands next.

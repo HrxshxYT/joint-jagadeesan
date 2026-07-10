@@ -14,6 +14,7 @@ import { discoverEvents, bindEvents } from "./core/EventHandler.js";
 import { AntinukeState } from "./modules/antinuke/AntinukeState.js";
 import { CaseService } from "./modules/moderation/CaseService.js";
 import { registerExpiryJob } from "./modules/moderation/expiry.js";
+import { registerModLogListener } from "./modules/logging/modLog.js";
 
 export async function startBot() {
   const env = loadEnv();
@@ -29,8 +30,9 @@ export async function startBot() {
       GatewayIntentBits.GuildInvites,
       GatewayIntentBits.GuildEmojisAndStickers,
       GatewayIntentBits.GuildVoiceStates,
+      GatewayIntentBits.GuildMessages,
     ],
-    partials: [Partials.GuildMember, Partials.User],
+    partials: [Partials.GuildMember, Partials.User, Partials.Message, Partials.Channel],
   });
 
   const modulesDir = join(dirname(fileURLToPath(import.meta.url)), "modules");
@@ -51,6 +53,7 @@ export async function startBot() {
 
   bindEvents(client, listeners, context);
   registerExpiryJob(context);
+  registerModLogListener(context);
   client.once("ready", (c) => logger.info(`Logged in as ${c.user.tag} (shard ready)`));
 
   await client.login(env.token);
