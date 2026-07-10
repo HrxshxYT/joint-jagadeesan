@@ -1,0 +1,46 @@
+import { Events } from "discord.js";
+import { sendAlert } from "./alert.js";
+
+export async function processMemberAdd({ member, guildConfig, state, deps, logger }) {
+  const antinuke = guildConfig.antinuke;
+  if (!antinuke?.enabled || !antinuke.antiRaidEnabled) return { action: "disabled" };
+
+  const count = state.recordJoin(member.guild.id, antinuke.raidWindowSec * 1000);
+  if (count < antinuke.raidJoinCount) return { action: "under_threshold", count };
+
+  await deps.kickMember(member, "Anti-raid: join spike detected");
+  await deps.sendAlert(
+    {
+      guild: member.guild,
+      channelId: antinuke.alertChannelId,
+      actionKey: "antiRaid",
+      executorId: member.id,
+      count,
+      punishment: "kick",
+    },
+    logger,
+  );
+  return { action: "raid", count };
+}
+
+export default {
+  name: Events.GuildMemberAdd,
+  async execute(ctx, member) {
+    try {
+      const guildConfig = await ctx.config.getGuild(member.guild.id);
+      const deps = {
+        kickMember: (m, reason) => m.kick(reason).catch(() => {}),
+        sendAlert,
+      };
+      await processMemberAdd({
+        member,
+        guildConfig,
+        state: ctx.antinuke,
+        deps,
+        logger: ctx.logger,
+      });
+    } catch (err) {
+      ctx.logger.error({ err }, "anti-raid listener error");
+    }
+  },
+};
