@@ -17,9 +17,15 @@ describe("loadEnv", () => {
     expect(env.logLevel).toBe("info");
   });
 
-  it("coerces a numeric SHARD_COUNT", () => {
-    const env = loadEnv({ ...base, SHARD_COUNT: "4" });
+  it("coerces a numeric BOT_SHARD_COUNT", () => {
+    const env = loadEnv({ ...base, BOT_SHARD_COUNT: "4" });
     expect(env.shardCount).toBe(4);
+  });
+
+  it("ignores the reserved SHARD_COUNT env var (discord.js collision)", () => {
+    // SHARD_COUNT is read by discord.js itself; our config must not depend on it.
+    const env = loadEnv({ ...base, SHARD_COUNT: "auto" });
+    expect(env.shardCount).toBe("auto"); // default, not driven by SHARD_COUNT
   });
 
   it("throws when a required var is missing", () => {

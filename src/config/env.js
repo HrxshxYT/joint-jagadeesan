@@ -1,8 +1,6 @@
 import { z } from "zod";
 
-const shardCount = z
-  .union([z.literal("auto"), z.coerce.number().int().positive()])
-  .default("auto");
+const shardCount = z.union([z.literal("auto"), z.coerce.number().int().positive()]).default("auto");
 
 const schema = z.object({
   DISCORD_TOKEN: z.string().min(1, "DISCORD_TOKEN is required"),
@@ -10,7 +8,9 @@ const schema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   DEV_GUILD_ID: z.string().optional(),
-  SHARD_COUNT: shardCount,
+  // NOTE: must NOT be named SHARD_COUNT — discord.js reads process.env.SHARD_COUNT
+  // to auto-detect spawned shards, which would crash a standalone Client with "auto".
+  BOT_SHARD_COUNT: shardCount,
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
 });
 
@@ -27,7 +27,7 @@ export function loadEnv(raw = process.env) {
     databaseUrl: e.DATABASE_URL,
     nodeEnv: e.NODE_ENV,
     devGuildId: e.DEV_GUILD_ID,
-    shardCount: e.SHARD_COUNT,
+    shardCount: e.BOT_SHARD_COUNT,
     logLevel: e.LOG_LEVEL,
   };
 }
