@@ -6,6 +6,17 @@ import { errorEmbed } from "../../../lib/embeds.js";
 export default {
   name: Events.InteractionCreate,
   async execute(ctx, interaction) {
+    if (interaction.isAutocomplete?.()) {
+      const command = ctx.commands.get(interaction.commandName);
+      if (command?.autocomplete) {
+        try {
+          await command.autocomplete(interaction, ctx);
+        } catch (err) {
+          ctx.logger.error({ err }, "autocomplete failed");
+        }
+      }
+      return;
+    }
     if (!interaction.isChatInputCommand()) return;
     const command = ctx.commands.get(interaction.commandName);
     if (!command) return;

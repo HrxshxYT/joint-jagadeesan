@@ -33,7 +33,10 @@ export async function discoverCommands(dir) {
     for (const file of files) {
       if (!file.endsWith(".js")) continue;
       const mod = await import(pathToFileURL(join(cmdDir, file)).href);
-      if (mod.default) modules.push(mod.default);
+      if (mod.default) {
+        mod.default.category = md.name;
+        modules.push(mod.default);
+      }
     }
   }
   return modules;
