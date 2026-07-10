@@ -28,7 +28,10 @@ export async function discoverEvents(dir) {
     for (const file of files) {
       if (!file.endsWith(".js")) continue;
       const mod = await import(pathToFileURL(join(evDir, file)).href);
-      if (mod.default) listeners.push(mod.default);
+      if (mod.default) {
+        if (Array.isArray(mod.default)) listeners.push(...mod.default);
+        else listeners.push(mod.default);
+      }
     }
   }
   return listeners;
