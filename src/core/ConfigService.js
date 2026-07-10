@@ -1,4 +1,4 @@
-const INCLUDE = { antinuke: true, logging: true, modRoles: true };
+const INCLUDE = { antinuke: true, logging: true, modRoles: true, whitelist: true };
 
 export class ConfigService {
   constructor(prisma) {
@@ -26,6 +26,33 @@ export class ConfigService {
     });
     this.cache.set(guildId, row);
     return row;
+  }
+
+  async updateAntinuke(guildId, data) {
+    await this.getGuild(guildId); // ensure the parent guild row exists
+    const row = await this.prisma.antinukeConfig.upsert({
+      where: { guildId },
+      create: { guildId, ...data },
+      update: data,
+    });
+    this.invalidate(guildId);
+    return row;
+  }
+
+  async addWhitelist(guildId, targetId, type, addedById) {
+    await this.getGuild(guildId);
+    const row = await this.prisma.whitelist.upsert({
+      where: { guildId_targetId: { guildId, targetId } },
+      create: { guildId, targetId, type, addedById },
+      update: { type },
+    });
+    this.invalidate(guildId);
+    return row;
+  }
+
+  async removeWhitelist(guildId, targetId) {
+    await this.prisma.whitelist.deleteMany({ where: { guildId, targetId } });
+    this.invalidate(guildId);
   }
 
   invalidate(guildId) {
