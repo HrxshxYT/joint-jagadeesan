@@ -27,7 +27,7 @@ export function buildWhitelistEmbed(whitelist = []) {
 
   if (!whitelist.length) {
     return embed.setDescription(
-      "No trusted users or roles are whitelisted.\nAdd one with `/antinuke whitelist add`.",
+      "No trusted users or roles are whitelisted yet.\nUse the **Add a user or role** menu below to add one.",
     );
   }
 
