@@ -15,6 +15,7 @@ export async function runAntinukePanel(interaction, ctx) {
     guildId,
     guild: interaction.guild,
     ownerId: interaction.user.id,
+    serverOwnerId: interaction.guild.ownerId,
     view: "main",
     wlAction: null,
     antinuke: { ...(gc.antinuke ?? {}) },

@@ -11,6 +11,7 @@ const ctx = () => ({
 const baseState = () => ({
   guildId: "g1",
   ownerId: "o1",
+  serverOwnerId: "o1",
   view: "main",
   antinuke: { enabled: false, autoRevert: true, punishment: "ban" },
   whitelist: [],
@@ -102,6 +103,38 @@ describe("handleAntinukeComponent", () => {
     );
     expect(c.config.removeWhitelist).toHaveBeenCalledWith("g1", "u5");
     expect(state.whitelist).toEqual([]);
+  });
+
+  it("rejects a non-owner trying to add to the whitelist", async () => {
+    const c = ctx();
+    const state = baseState(); // serverOwnerId "o1"
+    const reply = vi.fn(async () => {});
+    const dir = await handleAntinukeComponent(
+      { customId: "an:wl:add:admin", values: ["u5"], roles: { has: () => false }, user: { id: "admin" }, reply },
+      state,
+      c,
+      render,
+    );
+    expect(dir).toBe("handled");
+    expect(reply).toHaveBeenCalled();
+    expect(c.config.addWhitelist).not.toHaveBeenCalled();
+    expect(state.whitelist).toEqual([]);
+  });
+
+  it("rejects a non-owner trying to remove from the whitelist", async () => {
+    const c = ctx();
+    const state = { ...baseState(), whitelist: [{ targetId: "u5", type: "user" }] };
+    const reply = vi.fn(async () => {});
+    const dir = await handleAntinukeComponent(
+      { customId: "an:wl:remove:admin", values: ["u5"], user: { id: "admin" }, reply },
+      state,
+      c,
+      render,
+    );
+    expect(dir).toBe("handled");
+    expect(reply).toHaveBeenCalled();
+    expect(c.config.removeWhitelist).not.toHaveBeenCalled();
+    expect(state.whitelist).toEqual([{ targetId: "u5", type: "user" }]);
   });
 
   it("returns 'close' for the close button", async () => {

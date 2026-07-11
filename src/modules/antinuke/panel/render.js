@@ -193,7 +193,11 @@ export function buildWhitelistLimitsView(state) {
 
 export function buildWhitelistView(state) {
   const o = state.ownerId;
+  const canEdit = state.serverOwnerId === o;
   const embed = buildWhitelistEmbed(state.whitelist);
+  if (!canEdit) {
+    embed.setFooter({ text: "🔒 Only the server owner can change the whitelist." });
+  }
 
   const rows = [
     new ActionRowBuilder().addComponents(
@@ -201,7 +205,8 @@ export function buildWhitelistView(state) {
         .setCustomId(`an:wl:add:${o}`)
         .setPlaceholder("Add a user or role…")
         .setMinValues(1)
-        .setMaxValues(1),
+        .setMaxValues(1)
+        .setDisabled(!canEdit),
     ),
   ];
 
@@ -211,6 +216,7 @@ export function buildWhitelistView(state) {
         new StringSelectMenuBuilder()
           .setCustomId(`an:wl:remove:${o}`)
           .setPlaceholder("Remove an entry…")
+          .setDisabled(!canEdit)
           .addOptions(
             state.whitelist.slice(0, 25).map((e) => ({
               label: `${e.type === "role" ? "Role" : "User"} ${e.targetId}`,
