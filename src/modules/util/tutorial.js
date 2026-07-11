@@ -34,10 +34,9 @@ export const TUTORIAL_CHAPTERS = [
     title: `${EMOJIS.gear} Auto-Moderation`,
     body:
       "Automatically filters bad messages.\n\n" +
-      "• `/automod enable`, then pick an action with `/automod action` (delete / warn / timeout).\n" +
-      "• Toggle filters: **spam**, **mention-spam**, **invite links**, **external links**, **mass-caps**, **emoji spam**.\n" +
-      "• `/automod panel` gives you a **button dashboard** to flip filters on/off by clicking.\n" +
-      "• Exempt roles/channels with `/automod exempt`.",
+      "• `/automod` opens a **button control panel** — one place for everything.\n" +
+      "• Enable it, pick an action (delete / warn / timeout), and toggle filters: **spam**, **mention-spam**, **invite links**, **external links**, **mass-caps**, **emoji spam**.\n" +
+      "• Pick **exempt roles/channels** right from the panel's select menus.",
   },
   {
     title: `${EMOJIS.log} Logging & Audit Log`,
