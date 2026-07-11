@@ -153,4 +153,31 @@ describe("handleAntinukeComponent", () => {
     expect(sub.reply).toHaveBeenCalled();
     expect(dir).toBe("handled");
   });
+
+  it("returns 'handled' when modal times out or is dismissed without persisting", async () => {
+    const c = ctx();
+    const state = baseState();
+    const i = {
+      customId: "an:adv:o1",
+      user: { id: "o1" },
+      showModal: vi.fn(async () => {}),
+      awaitModalSubmit: vi.fn(async () => { throw new Error("timeout"); }),
+    };
+    const dir = await handleAntinukeComponent(i, state, c, render);
+    expect(dir).toBe("handled");
+    expect(c.config.updateAntinuke).not.toHaveBeenCalled();
+  });
+
+  it("sets quarantineRoleId from a role select", async () => {
+    const c = ctx();
+    const state = baseState();
+    await handleAntinukeComponent(
+      { customId: "an:sel:qrole:o1", values: ["r9"], user: { id: "o1" } },
+      state,
+      c,
+      render,
+    );
+    expect(c.config.updateAntinuke).toHaveBeenCalledWith("g1", { quarantineRoleId: "r9" });
+    expect(state.antinuke.quarantineRoleId).toBe("r9");
+  });
 });
