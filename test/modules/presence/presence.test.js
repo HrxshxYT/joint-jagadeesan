@@ -16,7 +16,7 @@ describe("startPresenceRotation", () => {
   it("has the two requested statuses and a 3s interval", () => {
     expect(PRESENCE_INTERVAL_MS).toBe(3000);
     expect(PRESENCE_STATUSES.map((s) => s.name)).toEqual([
-      "/help | By hrxshxforpresident",
+      "/help",
       "High on Joint",
     ]);
   });
@@ -26,7 +26,7 @@ describe("startPresenceRotation", () => {
     startPresenceRotation(c, { intervalMs: 3000 });
     expect(c.user.setPresence).toHaveBeenCalledTimes(1);
     expect(c.user.setPresence.mock.calls[0][0].activities[0].name).toBe(
-      "/help | By hrxshxforpresident",
+      "/help",
     );
   });
 
@@ -39,7 +39,7 @@ describe("startPresenceRotation", () => {
 
     vi.advanceTimersByTime(3000);
     expect(c.user.setPresence.mock.calls[2][0].activities[0].name).toBe(
-      "/help | By hrxshxforpresident",
+      "/help",
     );
 
     expect(c.user.setPresence).toHaveBeenCalledTimes(3);
