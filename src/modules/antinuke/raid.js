@@ -1,14 +1,17 @@
 import { Events } from "discord.js";
+import { isWhitelisted } from "./config.js";
 import { sendAlert } from "./alert.js";
 
 export async function processMemberAdd({ member, guildConfig, state, deps, logger }) {
   const antinuke = guildConfig.antinuke;
   if (!antinuke?.enabled || !antinuke.antiRaidEnabled) return { action: "disabled" };
 
+  if (isWhitelisted(member, guildConfig.whitelist)) return { action: "exempt_whitelist" };
+
   const count = state.recordJoin(member.guild.id, antinuke.raidWindowSec * 1000);
   if (count < antinuke.raidJoinCount) return { action: "under_threshold", count };
 
-  await deps.kickMember(member, "Anti-raid: join spike detected");
+  await deps.kickMember(member, "Anti-raid: join spike detected!");
   await deps.sendAlert(
     {
       guild: member.guild,

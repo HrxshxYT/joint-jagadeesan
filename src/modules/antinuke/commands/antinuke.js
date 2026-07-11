@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
 import { successEmbed } from "../../../lib/embeds.js";
-import { buildStatusEmbed } from "../statusEmbed.js";
+import { buildStatusEmbed, buildWhitelistEmbed } from "../statusEmbed.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -62,6 +62,11 @@ export default {
         .addMentionableOption((o) =>
           o.setName("target").setDescription("User or role").setRequired(true),
         ),
+    )
+    .addSubcommand((s) =>
+      s
+        .setName("whitelistview")
+        .setDescription("View the trusted users/roles that bypass anti-nuke."),
     ),
   permissions: [PermissionFlagsBits.Administrator],
   async execute(interaction, ctx) {
@@ -103,20 +108,29 @@ export default {
     if (sub === "whitelist") {
       const action = interaction.options.getString("action");
       const target = interaction.options.getMentionable("target");
-      // A role mentionable exposes `.permissions` and lacks user-only fields.
-      const type =
-        "permissions" in target && !("username" in target) && !("bot" in target) ? "role" : "user";
+      // A mentionable resolves to a GuildMember (has `.user`), a User (has
+      // `.username`), or a Role (has neither). A GuildMember also exposes
+      // `.permissions`, so we must key on person-only fields — probing for
+      // role-like fields would misclassify members as roles.
+      const isUser = "user" in target || "username" in target;
+      const type = isUser ? "user" : "role";
+      const mention = isUser ? `<@${target.id}>` : `<@&${target.id}>`;
       if (action === "add") {
         await ctx.config.addWhitelist(guildId, target.id, type, interaction.user?.id ?? "unknown");
         await interaction.reply({
-          embeds: [successEmbed(`Added <@${target.id}> to the whitelist.`)],
+          embeds: [successEmbed(`Added ${mention} to the whitelist.`)],
         });
       } else {
         await ctx.config.removeWhitelist(guildId, target.id);
         await interaction.reply({
-          embeds: [successEmbed(`Removed \`${target.id}\` from the whitelist.`)],
+          embeds: [successEmbed(`Removed ${mention} from the whitelist.`)],
         });
       }
+      return;
+    }
+    if (sub === "whitelistview") {
+      const guildConfig = await ctx.config.getGuild(guildId);
+      await interaction.reply({ embeds: [buildWhitelistEmbed(guildConfig.whitelist)] });
       return;
     }
     if (sub === "status") {
