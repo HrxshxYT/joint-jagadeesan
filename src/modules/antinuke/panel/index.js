@@ -1,6 +1,12 @@
 import { runPanel } from "../../../lib/panel.js";
-import { buildMainView, buildWhitelistView } from "./render.js";
+import { buildMainView, buildWhitelistView, buildWhitelistLimitsView } from "./render.js";
 import { handleAntinukeComponent } from "./handlers.js";
+
+const VIEWS = {
+  whitelist: buildWhitelistView,
+  wllimits: buildWhitelistLimitsView,
+  main: buildMainView,
+};
 
 export async function runAntinukePanel(interaction, ctx) {
   const guildId = interaction.guildId;
@@ -10,10 +16,11 @@ export async function runAntinukePanel(interaction, ctx) {
     guild: interaction.guild,
     ownerId: interaction.user.id,
     view: "main",
+    wlAction: null,
     antinuke: { ...(gc.antinuke ?? {}) },
     whitelist: [...(gc.whitelist ?? [])],
   };
-  const render = () => (state.view === "whitelist" ? buildWhitelistView(state) : buildMainView(state));
+  const render = () => (VIEWS[state.view] ?? buildMainView)(state);
 
   await runPanel({
     interaction,
