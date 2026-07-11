@@ -8,6 +8,7 @@ import {
 const state = (over = {}) => ({
   guildId: "g1",
   ownerId: "o1",
+  serverOwnerId: "o1",
   view: "main",
   antinuke: { enabled: true, panicMode: false, autoRevert: true, antiRaidEnabled: false, punishment: "ban" },
   whitelist: [{ targetId: "u1", type: "user" }, { targetId: "r1", type: "role" }],
@@ -56,6 +57,34 @@ describe("buildWhitelistView", () => {
       .components.flatMap((r) => r.components.map((c) => c.data.custom_id));
     expect(ids).not.toContain("an:wl:remove:o1");
     expect(ids).toContain("an:wl:add:o1");
+  });
+
+  const addAndRemove = (components) => {
+    const all = components.flatMap((r) => r.components);
+    return {
+      add: all.find((c) => c.data.custom_id === "an:wl:add:o1"),
+      remove: all.find((c) => c.data.custom_id === "an:wl:remove:o1"),
+    };
+  };
+
+  it("enables add/remove when the panel opener is the server owner", () => {
+    const { embeds, components } = buildWhitelistView(
+      state({ view: "whitelist", serverOwnerId: "o1" }),
+    );
+    const { add, remove } = addAndRemove(components);
+    expect(add.data.disabled).toBeFalsy();
+    expect(remove.data.disabled).toBeFalsy();
+    expect(JSON.stringify(embeds[0].data)).not.toContain("Only the server owner");
+  });
+
+  it("disables add/remove and notes owner-only when opener is not the server owner", () => {
+    const { embeds, components } = buildWhitelistView(
+      state({ view: "whitelist", serverOwnerId: "someone-else" }),
+    );
+    const { add, remove } = addAndRemove(components);
+    expect(add.data.disabled).toBe(true);
+    expect(remove.data.disabled).toBe(true);
+    expect(JSON.stringify(embeds[0].data)).toContain("Only the server owner can change the whitelist");
   });
 });
 

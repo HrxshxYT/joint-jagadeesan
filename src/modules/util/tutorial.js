@@ -26,7 +26,7 @@ export const TUTORIAL_CHAPTERS = [
     body:
       "Protects against mass-destruction and rogue admins.\n\n" +
       "• `/antinuke` opens a **button control panel** — toggle protection, punishment, alert channel, quarantine role, and anti-raid all in one place.\n" +
-      "• **Whitelist** trusted users/bots from the panel's **Whitelist** button.\n" +
+      "• **Whitelist** trusted users/bots from the panel's **Whitelist** button — only the **server owner** can add or remove entries.\n" +
       "• **Anti-raid** auto-acts on floods of new joins; **panic mode** locks the server down.\n" +
       "• Set an alert channel so you're notified the instant something trips.",
   },

@@ -137,6 +137,15 @@ export async function handleAntinukeComponent(i, state, ctx, render) {
       state.view = "main";
       return "update";
     }
+    if (arg === "add" || arg === "remove") {
+      if (i.user.id !== state.serverOwnerId) {
+        await i.reply({
+          embeds: [errorEmbed("Only the server owner can change the anti-nuke whitelist.")],
+          ephemeral: true,
+        });
+        return "handled";
+      }
+    }
     if (arg === "add") {
       const targetId = i.values[0];
       const type = i.roles?.has?.(targetId) ? "role" : "user";
