@@ -1,5 +1,51 @@
 import { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from "discord.js";
 import { errorEmbed } from "../../../lib/embeds.js";
+import { getWhitelistLimit } from "../config.js";
+
+// Merges a patch into one action's whitelist-limit config and persists it.
+async function patchWhitelistLimit(state, ctx, actionKey, patch) {
+  const merged = { ...getWhitelistLimit(state.antinuke, actionKey), ...patch };
+  const whitelistLimits = { ...(state.antinuke.whitelistLimits ?? {}), [actionKey]: merged };
+  await ctx.config.updateAntinuke(state.guildId, { whitelistLimits });
+  state.antinuke.whitelistLimits = whitelistLimits;
+}
+
+async function handleWhitelistLimits(i, state, ctx, arg) {
+  if (arg === "open") {
+    state.view = "wllimits";
+    return "update";
+  }
+  if (arg === "back") {
+    state.view = "main";
+    state.wlAction = null;
+    return "update";
+  }
+  if (arg === "toggle") {
+    const next = !state.antinuke.whitelistLimitEnabled;
+    await ctx.config.updateAntinuke(state.guildId, { whitelistLimitEnabled: next });
+    state.antinuke.whitelistLimitEnabled = next;
+    return "update";
+  }
+  if (arg === "pick") {
+    state.wlAction = i.values[0];
+    return "update";
+  }
+  if (!state.wlAction) return "update";
+  if (arg === "limit") {
+    await patchWhitelistLimit(state, ctx, state.wlAction, { limit: Number(i.values[0]) });
+    return "update";
+  }
+  if (arg === "window") {
+    await patchWhitelistLimit(state, ctx, state.wlAction, { windowSec: Number(i.values[0]) });
+    return "update";
+  }
+  if (arg === "actog") {
+    const current = getWhitelistLimit(state.antinuke, state.wlAction);
+    await patchWhitelistLimit(state, ctx, state.wlAction, { enabled: !current.enabled });
+    return "update";
+  }
+  return "update";
+}
 
 async function openAdvancedModal(i, state, ctx, render) {
   const a = state.antinuke;
@@ -76,6 +122,10 @@ export async function handleAntinukeComponent(i, state, ctx, render) {
 
   if (kind === "adv") {
     return openAdvancedModal(i, state, ctx, render);
+  }
+
+  if (kind === "wll") {
+    return handleWhitelistLimits(i, state, ctx, arg);
   }
 
   if (kind === "wl") {

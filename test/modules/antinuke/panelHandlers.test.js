@@ -181,3 +181,85 @@ describe("handleAntinukeComponent", () => {
     expect(state.antinuke.quarantineRoleId).toBe("r9");
   });
 });
+
+describe("handleAntinukeComponent — whitelist limits", () => {
+  const render = () => ({ embeds: [], components: [] });
+  const wlState = (over = {}) => ({
+    guildId: "g1",
+    ownerId: "o1",
+    view: "main",
+    wlAction: null,
+    antinuke: { whitelistLimitEnabled: false, whitelistLimits: {} },
+    ...over,
+  });
+
+  it("opens and closes the whitelist-limits sub-view, resetting the picked action", async () => {
+    const s = wlState();
+    await handleAntinukeComponent({ customId: "an:wll:open:o1", user: { id: "o1" } }, s, ctx(), render);
+    expect(s.view).toBe("wllimits");
+    s.wlAction = "ban";
+    await handleAntinukeComponent({ customId: "an:wll:back:o1", user: { id: "o1" } }, s, ctx(), render);
+    expect(s.view).toBe("main");
+    expect(s.wlAction).toBeNull();
+  });
+
+  it("toggles the master feature flag", async () => {
+    const c = ctx();
+    const s = wlState();
+    await handleAntinukeComponent({ customId: "an:wll:toggle:o1", user: { id: "o1" } }, s, c, render);
+    expect(c.config.updateAntinuke).toHaveBeenCalledWith("g1", { whitelistLimitEnabled: true });
+    expect(s.antinuke.whitelistLimitEnabled).toBe(true);
+  });
+
+  it("picks an action to configure", async () => {
+    const s = wlState();
+    await handleAntinukeComponent(
+      { customId: "an:wll:pick:o1", values: ["kick"], user: { id: "o1" } },
+      s,
+      ctx(),
+      render,
+    );
+    expect(s.wlAction).toBe("kick");
+  });
+
+  it("sets the limit for the picked action, merging defaults", async () => {
+    const c = ctx();
+    const s = wlState({ wlAction: "ban" });
+    await handleAntinukeComponent(
+      { customId: "an:wll:limit:o1", values: ["5"], user: { id: "o1" } },
+      s,
+      c,
+      render,
+    );
+    expect(c.config.updateAntinuke).toHaveBeenCalledWith("g1", {
+      whitelistLimits: { ban: { enabled: false, limit: 5, windowSec: 30 } },
+    });
+    expect(s.antinuke.whitelistLimits.ban.limit).toBe(5);
+  });
+
+  it("sets the window and toggles the per-action enabled flag", async () => {
+    const c = ctx();
+    const s = wlState({ wlAction: "ban" });
+    await handleAntinukeComponent(
+      { customId: "an:wll:window:o1", values: ["40"], user: { id: "o1" } },
+      s,
+      c,
+      render,
+    );
+    expect(s.antinuke.whitelistLimits.ban.windowSec).toBe(40);
+    await handleAntinukeComponent({ customId: "an:wll:actog:o1", user: { id: "o1" } }, s, c, render);
+    expect(s.antinuke.whitelistLimits.ban.enabled).toBe(true);
+  });
+
+  it("ignores limit/window/actog when no action is selected", async () => {
+    const c = ctx();
+    const s = wlState({ wlAction: null });
+    await handleAntinukeComponent(
+      { customId: "an:wll:limit:o1", values: ["5"], user: { id: "o1" } },
+      s,
+      c,
+      render,
+    );
+    expect(c.config.updateAntinuke).not.toHaveBeenCalled();
+  });
+});
