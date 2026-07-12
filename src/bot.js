@@ -9,6 +9,7 @@ import { createLogger } from "./core/Logger.js";
 import { ConfigService } from "./core/ConfigService.js";
 import { StatsService } from "./core/StatsService.js";
 import { Cooldowns } from "./core/Cooldowns.js";
+import { PingHistory } from "./lib/PingHistory.js";
 import { Scheduler } from "./core/Scheduler.js";
 import { discoverCommands, buildCommandMap } from "./core/CommandHandler.js";
 import { discoverEvents, bindEvents } from "./core/EventHandler.js";
@@ -62,6 +63,7 @@ export async function startBot() {
     config: new ConfigService(prisma),
     stats: new StatsService(prisma),
     cooldowns: new Cooldowns(),
+    pingHistory: new PingHistory(),
     scheduler: new Scheduler({ cron, logger }),
     antinuke: new AntinukeState(),
     cases: new CaseService(prisma),
@@ -80,6 +82,10 @@ export async function startBot() {
 
 
   await client.login(env.token);
+
+  const pingSampler = setInterval(() => context.pingHistory.push(client.ws.ping), 10_000);
+  pingSampler.unref?.();
+
   return { client, context };
 }
 
