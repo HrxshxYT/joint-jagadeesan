@@ -1,14 +1,7 @@
-import { createCanvas, GlobalFonts, loadImage } from "@napi-rs/canvas";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { ensureCardFont } from "../../lib/cardFont.js";
 
-const fontPath = join(dirname(fileURLToPath(import.meta.url)), "assets", "DejaVuSans.ttf");
-try {
-  GlobalFonts.registerFromPath(fontPath, "RankSans");
-} catch {
-  // Missing/invalid font file: fall back to the canvas library's built-in default font
-  // rather than throwing at module import time.
-}
+const FONT = ensureCardFont();
 
 const W = 900;
 const H = 260;
@@ -41,10 +34,10 @@ export async function buildRankCard({ username, avatarPng, level, rank, xpIntoLe
 
   // Text
   ctx.fillStyle = "#ffffff";
-  ctx.font = "42px RankSans";
+  ctx.font = `42px ${FONT}`;
   ctx.fillText(username, 270, 90);
 
-  ctx.font = "28px RankSans";
+  ctx.font = `28px ${FONT}`;
   ctx.fillStyle = "#9fb3ab";
   ctx.fillText(`Rank #${rank}`, 270, 135);
   ctx.fillText(`Level ${level}`, 430, 135);
@@ -57,7 +50,7 @@ export async function buildRankCard({ username, avatarPng, level, rank, xpIntoLe
   ctx.fillRect(barX, barY, Math.max(0, Math.min(1, percent)) * barW, barH);
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "24px RankSans";
+  ctx.font = `24px ${FONT}`;
   ctx.fillText(`${xpIntoLevel} / ${xpForNext} XP`, barX + 10, barY + 28);
 
   return canvas.toBuffer("image/png");
