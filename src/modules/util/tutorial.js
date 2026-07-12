@@ -55,6 +55,15 @@ export const TUTORIAL_CHAPTERS = [
       "• `/reactionrole add <message_id> <emoji> @role` — let members self-assign roles by reacting.",
   },
   {
+    title: `${EMOJIS.star} Leveling`,
+    body:
+      "Reward activity with XP and levels.\n\n" +
+      "• `/levels` opens a **control panel** — enable leveling, toggle level-up announcements, set XP rate/cooldown, choose ignored channels/roles, and configure **role rewards**.\n" +
+      "• Members earn XP by chatting (rate-limited); level-ups announce in the current channel.\n" +
+      "• **Role rewards** are **highest-only** — a member wears just their current tier.\n" +
+      "• `/rank` shows a member's level card; `/leaderboard` ranks the server by XP.",
+  },
+  {
     title: `${EMOJIS.invite} Invite Tracking`,
     body:
       "See who's growing your server.\n\n" +
