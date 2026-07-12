@@ -20,6 +20,7 @@ import { InviteService } from "./modules/invites/InviteService.js";
 import { InviteCache } from "./modules/invites/InviteCache.js";
 import { AutomodState } from "./modules/automod/AutomodState.js";
 import { ReactionRoleService } from "./modules/welcome/ReactionRoleService.js";
+import { LevelingService } from "./modules/leveling/LevelingService.js";
 
 export async function startBot() {
   const env = loadEnv();
@@ -68,6 +69,7 @@ export async function startBot() {
     inviteCache: new InviteCache(),
     automod: new AutomodState(),
     reactionRoles: new ReactionRoleService(prisma),
+    leveling: new LevelingService(prisma),
   };
 
   bindEvents(client, listeners, context);
