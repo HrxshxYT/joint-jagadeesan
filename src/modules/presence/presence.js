@@ -5,8 +5,6 @@ import { ActivityType } from "discord.js";
 export const PRESENCE_STATUSES = [
   { name: "/help", type: ActivityType.Custom },
   { name: "High on Joint", type: ActivityType.Custom },
-  { name: "By hrxshxforpresident", type: ActivityType.Custom },
-
 ];
 
 export const PRESENCE_INTERVAL_MS = 10000;
