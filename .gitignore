@@ -6,3 +6,7 @@ dist/
 coverage/
 .DS_Store
 prisma/*.db
+
+# Private planning docs (kept local, not in git)
+Joint_Jagadeesan_Dashboard_Plan.pdf
+Joint_Jagadeesan_Features_and_Roadmap.pdf
