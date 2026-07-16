@@ -15,6 +15,7 @@ const base = {
   integrations: 5,
   totalAssets: 0,
   threatAssets: 0,
+  whitelisted: 3,
   members: 1234,
   features: { "Anti-Nuke": true, "Anti-Raid": true, "Auto-Mod": true },
 };

@@ -87,7 +87,7 @@ describe("computeMetrics", () => {
     expect(m.permRisk).toBe(2);
   });
 
-  it("respects the whitelist for roles and users", () => {
+  it("respects the whitelist for roles and users and counts entries", () => {
     const config = {
       ...secureConfig,
       whitelist: [
@@ -98,6 +98,7 @@ describe("computeMetrics", () => {
     const m = computeMetrics({ guild: guild(), config });
     expect(m.threatRoles).toBe(0);
     expect(m.threatUsers).toBe(0);
+    expect(m.whitelisted).toBe(2);
   });
 
   it("counts webhooks as assets and unaccountable ones as threats", () => {

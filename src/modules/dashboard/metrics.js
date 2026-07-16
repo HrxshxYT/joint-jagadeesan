@@ -117,6 +117,7 @@ export function computeMetrics({ guild, config = {}, webhooks = [] } = {}) {
     integrations,
     totalAssets,
     threatAssets,
+    whitelisted: whitelist.length,
     members: guild.memberCount ?? members.length,
     features,
   };

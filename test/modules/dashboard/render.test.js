@@ -49,8 +49,8 @@ describe("buildDashboardEmbeds", () => {
 
   it("shows the shield status from the metrics", () => {
     const [on] = buildDashboardEmbeds(metrics);
-    expect(JSON.stringify(on.data)).toContain("**Shield:** Armed");
+    expect(JSON.stringify(on.data)).toContain("**Shield:** Guarded");
     const [off] = buildDashboardEmbeds({ ...metrics, firewall: false });
-    expect(JSON.stringify(off.data)).toContain("**Shield:** Down");
+    expect(JSON.stringify(off.data)).toContain("**Shield:** Unprotected");
   });
 });
