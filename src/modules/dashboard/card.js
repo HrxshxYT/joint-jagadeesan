@@ -33,7 +33,7 @@ export function buildDashboardCard(metrics, { guildName = "This Server" } = {}) 
   });
   drawText(
     ctx,
-    `POSTURE: ${m.tier.label}    ·    SHIELD: ${m.firewall ? "ARMED" : "DOWN"}    ·    MEMBERS: ${m.members}    ·    SYNC: LIVE`,
+    `POSTURE: ${m.tier.label}    ·    SHIELD: ${m.firewall ? "GUARDED" : "UNPROTECTED"}    ·    MEMBERS: ${m.members}    ·    SYNC: LIVE`,
     P + 16,
     88,
     { size: 16, color: GLASS.label },
@@ -73,13 +73,12 @@ export function buildDashboardCard(metrics, { guildName = "This Server" } = {}) 
     { symbol: "!", label: "RISKY ROLES", value: m.threatRoles, color: threatColor(m.threatRoles), edge: threatEdge(m.threatRoles) },
     { symbol: "‼", label: "EXPOSURE", value: m.permRisk, color: threatColor(m.permRisk), edge: threatEdge(m.permRisk) },
     { symbol: "#", label: "CHANNELS", value: m.channels, color: GLASS.text, edge: accent },
-    { symbol: "+", label: "OPERATORS", value: m.privileged, color: GLASS.text, edge: accent },
+    { symbol: "✓", label: "WHITELISTED", value: m.whitelisted, color: GLASS.text, edge: accent },
     { symbol: "✕", label: "FLAGGED USERS", value: m.threatUsers, color: threatColor(m.threatUsers), edge: threatEdge(m.threatUsers) },
     { symbol: "@", label: "CONNECTED APPS", value: m.integrations, color: GLASS.text, edge: accent },
     { symbol: "●", label: "WEBHOOKS", value: m.totalAssets, color: GLASS.text, edge: accent },
-    { symbol: "▲", label: "RISKY HOOKS", value: m.threatAssets, color: threatColor(m.threatAssets), edge: threatEdge(m.threatAssets) },
     { symbol: "»", label: "SURVEILLANCE", value: "Live", color: GLASS.accentSoft, edge: accent },
-    { symbol: "▣", label: "SHIELD", value: m.firewall ? "Armed" : "Down", color: m.firewall ? GLASS.good : GLASS.danger, edge: m.firewall ? accent : GLASS.danger },
+    { symbol: "▣", label: "SHIELD", value: m.firewall ? "Guarded" : "Unprotected", color: m.firewall ? GLASS.good : GLASS.danger, edge: m.firewall ? GLASS.good : GLASS.danger },
   ];
 
   cells.forEach((cell, i) => {

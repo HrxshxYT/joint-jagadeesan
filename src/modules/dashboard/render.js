@@ -28,7 +28,7 @@ export function buildDashboardEmbeds(metrics, { guildName } = {}) {
     .setDescription(
       [
         `**Posture:** ${m.tier.label}`,
-        `**Shield:** ${m.firewall ? "Armed" : "Down"}`,
+        `**Shield:** ${m.firewall ? "Guarded" : "Unprotected"}`,
         `**Members:** ${m.members}`,
         `**Last Sync:** <t:${sync}:R>`,
         `**Surveillance:** Live`,
