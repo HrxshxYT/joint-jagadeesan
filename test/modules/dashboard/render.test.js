@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildDashboardEmbeds, integrityBar } from "../../../src/modules/dashboard/render.js";
+import { buildDashboardEmbeds, integrityBar, CARD_FILENAME } from "../../../src/modules/dashboard/render.js";
 
 const metrics = {
   integrity: 100,
@@ -28,28 +28,24 @@ describe("integrityBar", () => {
 });
 
 describe("buildDashboardEmbeds", () => {
-  it("renders every metric, security toggles and the dev credit footer", () => {
+  it("hosts the card image and summarises status, systems and members", () => {
     const [embed] = buildDashboardEmbeds(metrics);
     const json = JSON.stringify(embed.data);
     expect(json).toContain("SECURITY DASHBOARD");
     expect(json).toContain("PROTECTED");
     expect(json).toContain("100%");
-    expect(json).toContain("15"); // roles
-    expect(json).toContain("22"); // channels
     expect(json).toContain("1234"); // members
     expect(json).toContain("Anti-Nuke");
     expect(json).toContain("Anti-Raid");
+    expect(embed.data.image.url).toBe(`attachment://${CARD_FILENAME}`);
     expect(embed.data.footer.text).toBe("Developed by hrxshxforpresident");
     expect(embed.data.color).toBe(0x2ecc71);
   });
 
-  it("shows a clean monitoring core when there are no threats", () => {
-    const [embed] = buildDashboardEmbeds(metrics);
-    expect(JSON.stringify(embed.data)).toContain("No recent security events detected");
-  });
-
-  it("warns when threat metrics are non-zero", () => {
-    const [embed] = buildDashboardEmbeds({ ...metrics, threatUsers: 3 });
-    expect(JSON.stringify(embed.data)).toContain("Elevated exposure detected");
+  it("shows the firewall status from the metrics", () => {
+    const [on] = buildDashboardEmbeds(metrics);
+    expect(JSON.stringify(on.data)).toContain("**Firewall:** Active");
+    const [off] = buildDashboardEmbeds({ ...metrics, firewall: false });
+    expect(JSON.stringify(off.data)).toContain("**Firewall:** Offline");
   });
 });
