@@ -4,7 +4,7 @@ import { ActivityType } from "discord.js";
 // no "Playing"/"Watching" prefix, so what you see is exactly the name.
 export const PRESENCE_STATUSES = [
   { name: "/help", type: ActivityType.Custom },
-  { name: "High on Joint", type: ActivityType.Custom },
+  { name: "Guarding", type: ActivityType.Custom },
   { name: "By hrxshxforpresident", type: ActivityType.Custom },
 
 ];
