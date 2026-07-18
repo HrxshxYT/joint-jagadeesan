@@ -26,7 +26,6 @@ import { TicketService } from "./modules/tickets/TicketService.js";
 import { WatchVcService } from "./modules/watchvc/WatchVcService.js";
 import { realDeps as watchVcDeps } from "./modules/watchvc/deps.js";
 import { DashboardService } from "./modules/dashboard/DashboardService.js";
-import { MusicService } from "./modules/music/MusicService.js";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -112,7 +111,6 @@ export async function startBot() {
     tickets: new TicketService(prisma),
     watchvc: new WatchVcService({ client, logger, config, deps: watchVcDeps(client) }),
     dashboards: new DashboardService({ logger, prisma, refreshMs: 90_000 }),
-    music: new MusicService({ client, logger, config: env.lavalink }),
   };
 
   bindEvents(client, listeners, context);

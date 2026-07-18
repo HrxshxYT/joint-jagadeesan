@@ -158,19 +158,6 @@ changes in the server to one channel — complementary to the per-category `/log
   entries are attributed to the responsible user via the audit log. Guild-level only (Discord does
   not reliably deliver global username/avatar changes).
 
-## Music
-
-Backed by a **Lavalink** node (`lavalink-client`). Set `LAVALINK_HOST` (+ `LAVALINK_PORT`,
-`LAVALINK_PASSWORD`, `LAVALINK_SECURE`) to enable it — without them music stays off and the
-commands reply "not configured". Sources: YouTube/SoundCloud search + URLs, and Spotify/Apple
-links when the node runs the **LavaSrc** plugin.
-
-- `/play <search or URL>`, `/pause`, `/resume`, `/skip`, `/stop`, `/seek`, `/volume`.
-- `/queue`, `/nowplaying`, `/loop`, `/shuffle`, `/remove`, `/clear`, `/autoplay`, `/filter`
-  (bassboost / nightcore / 8D / off).
-- **Now Playing** is a rich purple embed (artwork + progress bar) with player **buttons**
-  (pause/skip/stop/loop/shuffle/queue) usable by anyone in the bot's voice channel.
-
 ## Interface & theme
 
 - **Purple-forward embeds** across the bot (errors stay red, warnings amber, success green) —
