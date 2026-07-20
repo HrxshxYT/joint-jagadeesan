@@ -3,8 +3,8 @@ import { ActivityType } from "discord.js";
 // Statuses the bot cycles through. Custom activities render the raw text with
 // no "Playing"/"Watching" prefix, so what you see is exactly the name.
 export const PRESENCE_STATUSES = [
-  { name: "/help", type: ActivityType.Custom },
-  { name: "Guarding", type: ActivityType.Custom },
+  { name: "/scan", type: ActivityType.Custom },
+  { name: "Pacifist", type: ActivityType.Custom },
   { name: "By hrxshxforpresident", type: ActivityType.Custom },
 
 ];
