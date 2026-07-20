@@ -180,6 +180,24 @@ category to open a private ticket channel (optional reason modal). Staff can
 saves a plain-text transcript to the configured channel (optionally DMing the
 opener), then deletes the channel.
 
+## Keeping it alive 24/7 (free hosts)
+
+Free always-on hosts (Replit, etc.) put the container to sleep when nothing hits
+its web port. The bot starts a tiny keep-alive HTTP server for this — no extra
+dependency, it uses Node's built-in `http`:
+
+- `GET /` → `Suzune is alive.`
+- `GET /healthz` → `{"status":"ok","uptime":<seconds>}`
+
+It binds to `process.env.PORT` (injected by most hosts) or `3000` locally. To keep
+the host awake:
+
+1. Deploy and note the public URL the host gives you.
+2. Create a free [UptimeRobot](https://uptimerobot.com) monitor of type **HTTP(s)**
+   pointing at `https://<your-host-url>/healthz`, interval **5 minutes**.
+
+UptimeRobot's periodic ping keeps the port active so the host doesn't sleep the bot.
+
 ## Status
 
 Phase 1 complete. **UI overhaul shipped**: green theme, interactive buttons, `/tutorial`, and a

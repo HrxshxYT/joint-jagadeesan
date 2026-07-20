@@ -3,8 +3,13 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import "dotenv/config";
 import { loadEnv } from "./config/env.js";
+import { startKeepAlive } from "./lib/keepAlive.js";
 
 const env = loadEnv();
+
+// Serve a ping endpoint so an external monitor (UptimeRobot) can keep free
+// always-on hosts awake. Runs in the manager process, before shards spawn.
+startKeepAlive();
 const botPath = join(dirname(fileURLToPath(import.meta.url)), "bot.js");
 
 // A stray rejection from a background Discord REST call (e.g. a transient 500)
