@@ -16,8 +16,8 @@ describe("startPresenceRotation", () => {
   it("has the configured statuses and a 10s interval", () => {
     expect(PRESENCE_INTERVAL_MS).toBe(10000);
     expect(PRESENCE_STATUSES.map((s) => s.name)).toEqual([
-      "/help",
-      "Guarding",
+      "/scan",
+      "Pacifist",
       "By hrxshxforpresident",
     ]);
   });
@@ -27,7 +27,7 @@ describe("startPresenceRotation", () => {
     startPresenceRotation(c, { intervalMs: 3000 });
     expect(c.user.setPresence).toHaveBeenCalledTimes(1);
     expect(c.user.setPresence.mock.calls[0][0].activities[0].name).toBe(
-      "/help",
+      "/scan",
     );
   });
 
@@ -36,13 +36,13 @@ describe("startPresenceRotation", () => {
     startPresenceRotation(c, { intervalMs: 3000 });
 
     vi.advanceTimersByTime(3000);
-    expect(c.user.setPresence.mock.calls[1][0].activities[0].name).toBe("Guarding");
+    expect(c.user.setPresence.mock.calls[1][0].activities[0].name).toBe("Pacifist");
 
     vi.advanceTimersByTime(3000);
     expect(c.user.setPresence.mock.calls[2][0].activities[0].name).toBe("By hrxshxforpresident");
 
     vi.advanceTimersByTime(3000);
-    expect(c.user.setPresence.mock.calls[3][0].activities[0].name).toBe("/help");
+    expect(c.user.setPresence.mock.calls[3][0].activities[0].name).toBe("/scan");
 
     expect(c.user.setPresence).toHaveBeenCalledTimes(4);
   });
