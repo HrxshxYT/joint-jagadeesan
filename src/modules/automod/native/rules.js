@@ -13,30 +13,128 @@ export const RULE_PREFIX = "Suzune • ";
 const BLOCK_MESSAGE = "This message was blocked by Suzune AutoMod.";
 const MAX_TIMEOUT_SEC = 2419200; // Discord's 28-day ceiling.
 
-// The four native rules we manage, keyed by the config column that enables each.
+// A Keyword-trigger rule from static keyword/regex lists (cfg is unused).
+const keywordRule = (label, meta) => ({
+  name: `${RULE_PREFIX}${label}`,
+  triggerType: Trigger.Keyword,
+  timeoutAllowed: true,
+  triggerMetadata: () => meta,
+});
+
+// The native rules we manage, keyed by the config column that enables each.
+// Six use the Keyword trigger (Discord's max), plus one each of MentionSpam,
+// Spam, and KeywordPreset — nine rules, the full per-server allowance.
 // `timeoutAllowed` reflects Discord's rule: Timeout actions are only valid on
 // Keyword and MentionSpam triggers.
 export const RULE_DEFS = {
-  nativeInvites: {
-    name: `${RULE_PREFIX}Invite Links`,
-    triggerType: Trigger.Keyword,
-    timeoutAllowed: true,
-    triggerMetadata: () => ({
-      keywordFilter: [
-        "discord.gg/*",
-        "discord.com/invite/*",
-        "discordapp.com/invite/*",
-        "discord.io/*",
-        "discord.me/*",
-        "dsc.gg/*",
-        "invite.gg/*",
-      ],
-      regexPatterns: [
-        "(?i)discord(?:app)?\\.com/invite/[a-z0-9-]+",
-        "(?i)discord\\.(gg|io|me|li)/[a-z0-9-]+",
-      ],
-    }),
-  },
+  nativeInvites: keywordRule("Invite Links", {
+    keywordFilter: [
+      "discord.gg/*",
+      "discord.com/invite/*",
+      "discordapp.com/invite/*",
+      "discord.io/*",
+      "discord.me/*",
+      "dsc.gg/*",
+      "invite.gg/*",
+    ],
+    regexPatterns: [
+      "(?i)discord(?:app)?\\.com/invite/[a-z0-9-]+",
+      "(?i)discord\\.(gg|io|me|li)/[a-z0-9-]+",
+    ],
+  }),
+  nativeScamLinks: keywordRule("Scam & Phishing Links", {
+    keywordFilter: [
+      "discordnitro*",
+      "discord-nitro*",
+      "discordgift*",
+      "discord-gift*",
+      "nitro-discord*",
+      "dlscord*",
+      "disc0rd*",
+      "discrod*",
+      "steam-gift*",
+      "steamnitro*",
+      "*free-nitro*",
+    ],
+    regexPatterns: [
+      "(?i)https?://[^\\s/]*(dlscord|disc0rd|discrod|dlscordapp|discord-?nitro|discord-?gift|nitro-?discord|free-?nitro)",
+      "(?i)https?://[^\\s/]*(steamcommunity|steam-?community)[^\\s]*(gift|trade|nitro|award|free)",
+    ],
+  }),
+  nativeGrabbers: keywordRule("IP Loggers & Grabbers", {
+    keywordFilter: [
+      "grabify.link*",
+      "iplogger.org*",
+      "iplogger.com*",
+      "iplogger.ru*",
+      "iplogger.co*",
+      "2no.co*",
+      "yip.su*",
+      "iplis.ru*",
+      "02ip.ru*",
+      "ezstat.ru*",
+      "blasze.tk*",
+      "ps3cfw.com*",
+      "lovebird.guru*",
+      "trulove.guru*",
+      "dateing.club*",
+      "shrekis.life*",
+      "headshot.monster*",
+      "gaming-at-my.best*",
+      "screenshot.click*",
+      "imageshare.best*",
+      "quickmessage.us*",
+      "catsnthings.fun*",
+      "joinmy.site*",
+    ],
+    regexPatterns: [
+      "(?i)https?://[^\\s/]*(grabify|iplogger|ipgrab|2no\\.co|yip\\.su|ezstat|blasze)",
+    ],
+  }),
+  nativeNitroScams: keywordRule("Free-Nitro & Gift Scams", {
+    keywordFilter: [
+      "*free nitro*",
+      "*free discord nitro*",
+      "*nitro giveaway*",
+      "*claim your nitro*",
+      "*get free nitro*",
+      "*free steam gift*",
+      "*steam gift card*",
+      "*nitro for free*",
+      "*discord nitro free*",
+      "*free @everyone nitro*",
+    ],
+  }),
+  nativeCryptoScams: keywordRule("Crypto & Airdrop Scams", {
+    keywordFilter: [
+      "*free crypto*",
+      "*crypto giveaway*",
+      "*bitcoin giveaway*",
+      "*eth giveaway*",
+      "*airdrop*",
+      "*claim your airdrop*",
+      "*connect your wallet*",
+      "*double your bitcoin*",
+      "*free bitcoin*",
+      "*nft giveaway*",
+      "*wallet drainer*",
+    ],
+  }),
+  nativeAdSpam: keywordRule("Selling & Boosting Spam", {
+    keywordFilter: [
+      "*cheap boost*",
+      "*cheap boosts*",
+      "*cheap boosting*",
+      "*cheap nitro*",
+      "*boosting service*",
+      "*selling accounts*",
+      "*buy followers*",
+      "*sell nitro*",
+      "*dm me for promo*",
+      "*dm for cheap*",
+      "*server boosting cheap*",
+    ],
+  }),
   nativeMentions: {
     name: `${RULE_PREFIX}Mention Spam`,
     triggerType: Trigger.MentionSpam,

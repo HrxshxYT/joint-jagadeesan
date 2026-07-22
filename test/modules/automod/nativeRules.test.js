@@ -22,6 +22,11 @@ import {
 const fullCfg = () => ({
   nativeEnabled: true,
   nativeInvites: true,
+  nativeScamLinks: true,
+  nativeGrabbers: true,
+  nativeNitroScams: true,
+  nativeCryptoScams: true,
+  nativeAdSpam: true,
   nativeMentions: true,
   nativeSpam: true,
   nativePresets: true,
@@ -107,8 +112,15 @@ describe("desiredRuleKeys", () => {
   });
 
   it("lists only the enabled rules", () => {
-    const cfg = { ...fullCfg(), nativeSpam: false, nativePresets: false };
+    // Disable everything except invites + mentions.
+    const cfg = { ...fullCfg() };
+    for (const k of RULE_KEYS) cfg[k] = k === "nativeInvites" || k === "nativeMentions";
     expect(desiredRuleKeys(cfg)).toEqual(["nativeInvites", "nativeMentions"]);
+  });
+
+  it("covers all nine trigger slots when fully enabled", () => {
+    expect(RULE_KEYS).toHaveLength(9);
+    expect(desiredRuleKeys(fullCfg())).toHaveLength(9);
   });
 });
 

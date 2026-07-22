@@ -9,12 +9,18 @@ import {
 } from "discord.js";
 import { COLORS, EMOJIS } from "../../../lib/constants.js";
 
-// Rule toggle buttons: config column → short label.
+// Every native rule, in display order: [config column, label, one-line blurb].
+// The multi-select uses these as its options; the embed lists their state.
 const RULES = [
-  ["nativeInvites", "invites"],
-  ["nativeMentions", "mentions"],
-  ["nativeSpam", "spam"],
-  ["nativePresets", "profanity"],
+  ["nativeInvites", "Invite links", "Blocks Discord invite URLs"],
+  ["nativeScamLinks", "Scam & phishing links", "Fake Nitro / Steam-gift domains"],
+  ["nativeGrabbers", "IP loggers & grabbers", "grabify, iplogger & token grabbers"],
+  ["nativeNitroScams", "Free-Nitro & gift scams", "\"free nitro\" / gift-scam text"],
+  ["nativeCryptoScams", "Crypto & airdrop scams", "Airdrop / wallet-drainer text"],
+  ["nativeAdSpam", "Selling & boosting spam", "Cheap-boost / account-selling ads"],
+  ["nativeMentions", "Mention spam", "Mass @mentions & raid protection"],
+  ["nativeSpam", "Spam content", "Discord's built-in spam detection"],
+  ["nativePresets", "Profanity & slurs", "Discord's word-list presets"],
 ];
 
 // Timeout durations offered in the punishment select (seconds → label).
@@ -57,25 +63,26 @@ export function buildNativeEmbed(a, lastSync) {
       ? `${EMOJIS.on} Alert${a.nativeAlertChannelId ? ` → <#${a.nativeAlertChannelId}>` : " (no channel set)"}`
       : `${EMOJIS.off} Alert`,
     a.nativeTimeout
-      ? `${EMOJIS.on} Timeout → ${durationLabel(a.nativeTimeoutSeconds ?? 300)} _(invites & mentions only)_`
+      ? `${EMOJIS.on} Timeout → ${durationLabel(a.nativeTimeoutSeconds ?? 300)} _(link, keyword & mention rules only)_`
       : `${EMOJIS.off} Timeout`,
   ].join("\n");
 
-  const rules = RULES.map(([col, label]) => `${a[col] ? EMOJIS.on : EMOJIS.off} ${label}`).join(
-    "  ·  ",
-  );
+  const enabledCount = RULES.filter(([col]) => a[col]).length;
+  const rules = RULES.map(
+    ([col, label]) => `${a[col] ? EMOJIS.on : EMOJIS.off} ${label}`,
+  ).join("\n");
 
   const embed = new EmbedBuilder()
     .setColor(COLORS.brand)
     .setTitle(`${EMOJIS.shield} Discord AutoMod (native)`)
     .setDescription(
       "Provisions real Discord Auto Moderation rules via the API — they block at Discord's edge (before the message posts) and earn the **Uses AutoMod** badge.\n\n" +
-        "Toggle the rules and punishments, then press **Sync now** to apply them.",
+        "Pick which rules to run in the menu, tune the punishments, then press **Sync now** to apply them.",
     )
     .addFields(
       { name: "Status", value: a.nativeEnabled ? `${EMOJIS.on} Enabled` : `${EMOJIS.off} Disabled` },
-      { name: "Rules", value: rules },
-      { name: "Punishments", value: punishments },
+      { name: `Rules (${enabledCount}/${RULES.length})`, value: rules, inline: true },
+      { name: "Punishments", value: punishments, inline: true },
     );
 
   const note = summarizeSync(lastSync);
@@ -101,8 +108,22 @@ export function buildNativeView(a, ownerId, lastSync) {
     toggle(`am:ntog:nativeTimeout:${o}`, a.nativeTimeout, "Timeout"),
   );
 
-  const row2 = new ActionRowBuilder().addComponents(
-    ...RULES.map(([col, label]) => toggle(`am:ntog:${col}:${o}`, a[col], label)),
+  // All nine rules are toggled from one multi-select (9 buttons wouldn't fit
+  // Discord's five-row limit). Selected options = enabled rules.
+  const rulesRow = new ActionRowBuilder().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId(`am:nrules:${o}`)
+      .setPlaceholder("Protection rules to run")
+      .setMinValues(0)
+      .setMaxValues(RULES.length)
+      .addOptions(
+        RULES.map(([col, label, description]) => ({
+          label,
+          description,
+          value: col,
+          default: Boolean(a[col]),
+        })),
+      ),
   );
 
   const timeoutRow = new ActionRowBuilder().addComponents(
@@ -142,6 +163,6 @@ export function buildNativeView(a, ownerId, lastSync) {
 
   return {
     embeds: [buildNativeEmbed(a, lastSync)],
-    components: [row1, row2, timeoutRow, alertRow, actionsRow],
+    components: [row1, rulesRow, timeoutRow, alertRow, actionsRow],
   };
 }

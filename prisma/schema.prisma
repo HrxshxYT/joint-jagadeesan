@@ -162,6 +162,11 @@ model AutomodConfig {
   // are configurable per the block/alert/timeout actions below.
   nativeEnabled        Boolean @default(false)
   nativeInvites        Boolean @default(true)
+  nativeScamLinks      Boolean @default(true)
+  nativeGrabbers       Boolean @default(true)
+  nativeNitroScams     Boolean @default(true)
+  nativeCryptoScams    Boolean @default(true)
+  nativeAdSpam         Boolean @default(true)
   nativeMentions       Boolean @default(true)
   nativeSpam           Boolean @default(true)
   nativePresets        Boolean @default(true)

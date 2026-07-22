@@ -58,12 +58,21 @@ describe("handleAutomodComponent", () => {
     expect(s.view).toBe("main");
   });
 
-  it("toggles a native rule column", async () => {
+  it("sets enabled rules from the multi-select (selected = on)", async () => {
     const c = ctx();
-    const s = state({ automod: { nativeInvites: true } });
-    await handleAutomodComponent({ customId: "am:ntog:nativeInvites:o1" }, s, c);
-    expect(c.config.updateAutomod).toHaveBeenCalledWith("g1", { nativeInvites: false });
+    // Start with invites + scam links on; select only scam links + grabbers.
+    const s = state({ automod: { nativeInvites: true, nativeScamLinks: true, nativeGrabbers: false } });
+    await handleAutomodComponent(
+      { customId: "am:nrules:o1", values: ["nativeScamLinks", "nativeGrabbers"] },
+      s,
+      c,
+    );
+    const patch = c.config.updateAutomod.mock.calls[0][1];
+    expect(patch.nativeInvites).toBe(false); // was on, not selected → off
+    expect(patch.nativeGrabbers).toBe(true); // was off, selected → on
+    expect(patch).not.toHaveProperty("nativeScamLinks"); // already on, unchanged
     expect(s.automod.nativeInvites).toBe(false);
+    expect(s.automod.nativeGrabbers).toBe(true);
   });
 
   it("sets the native timeout duration from the select", async () => {

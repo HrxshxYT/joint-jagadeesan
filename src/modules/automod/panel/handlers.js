@@ -1,7 +1,8 @@
 import { RULE_KEYS, syncNativeRules, removeNativeRules } from "../native/rules.js";
 
-// Native-AutoMod boolean columns the panel can toggle directly.
-const NATIVE_TOGGLES = new Set(["nativeEnabled", "nativeAlert", "nativeTimeout", ...RULE_KEYS]);
+// Native-AutoMod boolean columns toggled by the button controls (the per-rule
+// toggles live in the `nrules` multi-select instead).
+const NATIVE_TOGGLES = new Set(["nativeEnabled", "nativeAlert", "nativeTimeout"]);
 
 // Dispatches an automod panel component click: persists via ctx.config.updateAutomod
 // and mirrors the change into the in-memory panel state. Returns a runPanel directive.
@@ -25,6 +26,21 @@ export async function handleAutomodComponent(i, state, ctx, render) {
       await ctx.config.updateAutomod(state.guildId, { [col]: next });
       state.automod[col] = next;
     }
+    return "update";
+  }
+
+  // Which native rules are enabled (multi-select; selected = on).
+  if (kind === "nrules") {
+    const selected = new Set(i.values);
+    const patch = {};
+    for (const key of RULE_KEYS) {
+      const on = selected.has(key);
+      if (Boolean(state.automod[key]) !== on) {
+        patch[key] = on;
+        state.automod[key] = on;
+      }
+    }
+    if (Object.keys(patch).length) await ctx.config.updateAutomod(state.guildId, patch);
     return "update";
   }
 
