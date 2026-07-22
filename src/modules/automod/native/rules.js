@@ -13,169 +13,198 @@ export const RULE_PREFIX = "Suzune • ";
 const BLOCK_MESSAGE = "This message was blocked by Suzune AutoMod.";
 const MAX_TIMEOUT_SEC = 2419200; // Discord's 28-day ceiling.
 
-// A Keyword-trigger rule from static keyword/regex lists (cfg is unused).
-const keywordRule = (label, meta) => ({
-  name: `${RULE_PREFIX}${label}`,
-  triggerType: Trigger.Keyword,
-  timeoutAllowed: true,
-  triggerMetadata: () => meta,
-});
+// Config columns the panel exposes as individual protection toggles. These are
+// the user-facing categories; several are packed into one Discord rule below so
+// we stay well under Discord's six-Keyword-rule ceiling.
+export const RULE_KEYS = [
+  "nativeInvites",
+  "nativeScamLinks",
+  "nativeGrabbers",
+  "nativeNitroScams",
+  "nativeCryptoScams",
+  "nativeAdSpam",
+  "nativeMentions",
+  "nativeSpam",
+  "nativePresets",
+];
 
-// The native rules we manage, keyed by the config column that enables each.
-// Six use the Keyword trigger (Discord's max), plus one each of MentionSpam,
-// Spam, and KeywordPreset — nine rules, the full per-server allowance.
-// `timeoutAllowed` reflects Discord's rule: Timeout actions are only valid on
-// Keyword and MentionSpam triggers.
-export const RULE_DEFS = {
-  nativeInvites: keywordRule("Invite Links", {
-    keywordFilter: [
-      "discord.gg/*",
-      "discord.com/invite/*",
-      "discordapp.com/invite/*",
-      "discord.io/*",
-      "discord.me/*",
-      "dsc.gg/*",
-      "invite.gg/*",
-    ],
-    regexPatterns: [
-      "(?i)discord(?:app)?\\.com/invite/[a-z0-9-]+",
-      "(?i)discord\\.(gg|io|me|li)/[a-z0-9-]+",
-    ],
-  }),
-  nativeScamLinks: keywordRule("Scam & Phishing Links", {
-    keywordFilter: [
-      "discordnitro*",
-      "discord-nitro*",
-      "discordgift*",
-      "discord-gift*",
-      "nitro-discord*",
-      "dlscord*",
-      "disc0rd*",
-      "discrod*",
-      "steam-gift*",
-      "steamnitro*",
-      "*free-nitro*",
-    ],
-    regexPatterns: [
-      "(?i)https?://[^\\s/]*(dlscord|disc0rd|discrod|dlscordapp|discord-?nitro|discord-?gift|nitro-?discord|free-?nitro)",
-      "(?i)https?://[^\\s/]*(steamcommunity|steam-?community)[^\\s]*(gift|trade|nitro|award|free)",
-    ],
-  }),
-  nativeGrabbers: keywordRule("IP Loggers & Grabbers", {
-    keywordFilter: [
-      "grabify.link*",
-      "iplogger.org*",
-      "iplogger.com*",
-      "iplogger.ru*",
-      "iplogger.co*",
-      "2no.co*",
-      "yip.su*",
-      "iplis.ru*",
-      "02ip.ru*",
-      "ezstat.ru*",
-      "blasze.tk*",
-      "ps3cfw.com*",
-      "lovebird.guru*",
-      "trulove.guru*",
-      "dateing.club*",
-      "shrekis.life*",
-      "headshot.monster*",
-      "gaming-at-my.best*",
-      "screenshot.click*",
-      "imageshare.best*",
-      "quickmessage.us*",
-      "catsnthings.fun*",
-      "joinmy.site*",
-    ],
-    regexPatterns: [
-      "(?i)https?://[^\\s/]*(grabify|iplogger|ipgrab|2no\\.co|yip\\.su|ezstat|blasze)",
-    ],
-  }),
-  nativeNitroScams: keywordRule("Free-Nitro & Gift Scams", {
-    keywordFilter: [
-      "*free nitro*",
-      "*free discord nitro*",
-      "*nitro giveaway*",
-      "*claim your nitro*",
-      "*get free nitro*",
-      "*free steam gift*",
-      "*steam gift card*",
-      "*nitro for free*",
-      "*discord nitro free*",
-      "*free @everyone nitro*",
-    ],
-  }),
-  nativeCryptoScams: keywordRule("Crypto & Airdrop Scams", {
-    keywordFilter: [
-      "*free crypto*",
-      "*crypto giveaway*",
-      "*bitcoin giveaway*",
-      "*eth giveaway*",
-      "*airdrop*",
-      "*claim your airdrop*",
-      "*connect your wallet*",
-      "*double your bitcoin*",
-      "*free bitcoin*",
-      "*nft giveaway*",
-      "*wallet drainer*",
-    ],
-  }),
-  nativeAdSpam: keywordRule("Selling & Boosting Spam", {
-    keywordFilter: [
-      "*cheap boost*",
-      "*cheap boosts*",
-      "*cheap boosting*",
-      "*cheap nitro*",
-      "*boosting service*",
-      "*selling accounts*",
-      "*buy followers*",
-      "*sell nitro*",
-      "*dm me for promo*",
-      "*dm for cheap*",
-      "*server boosting cheap*",
-    ],
-  }),
-  nativeMentions: {
+// ── Keyword / regex source lists ────────────────────────────────────────────
+const INVITE_KW = [
+  "discord.gg/*",
+  "discord.com/invite/*",
+  "discordapp.com/invite/*",
+  "discord.io/*",
+  "discord.me/*",
+  "dsc.gg/*",
+  "invite.gg/*",
+];
+const INVITE_RX = [
+  "(?i)discord(?:app)?\\.com/invite/[a-z0-9-]+",
+  "(?i)discord\\.(gg|io|me|li)/[a-z0-9-]+",
+];
+const SCAM_KW = [
+  "discordnitro*",
+  "discord-nitro*",
+  "discordgift*",
+  "discord-gift*",
+  "nitro-discord*",
+  "dlscord*",
+  "disc0rd*",
+  "discrod*",
+  "steam-gift*",
+  "steamnitro*",
+  "*free-nitro*",
+];
+const SCAM_RX = [
+  "(?i)https?://[^\\s/]*(dlscord|disc0rd|discrod|dlscordapp|discord-?nitro|discord-?gift|nitro-?discord|free-?nitro)",
+  "(?i)https?://[^\\s/]*(steamcommunity|steam-?community)[^\\s]*(gift|trade|nitro|award|free)",
+];
+const GRABBER_KW = [
+  "grabify.link*",
+  "iplogger.org*",
+  "iplogger.com*",
+  "iplogger.ru*",
+  "iplogger.co*",
+  "2no.co*",
+  "yip.su*",
+  "iplis.ru*",
+  "02ip.ru*",
+  "ezstat.ru*",
+  "blasze.tk*",
+  "ps3cfw.com*",
+  "lovebird.guru*",
+  "trulove.guru*",
+  "dateing.club*",
+  "shrekis.life*",
+  "headshot.monster*",
+  "gaming-at-my.best*",
+  "screenshot.click*",
+  "imageshare.best*",
+  "quickmessage.us*",
+  "catsnthings.fun*",
+  "joinmy.site*",
+];
+const GRABBER_RX = ["(?i)https?://[^\\s/]*(grabify|iplogger|ipgrab|2no\\.co|yip\\.su|ezstat|blasze)"];
+const NITRO_KW = [
+  "*free nitro*",
+  "*free discord nitro*",
+  "*nitro giveaway*",
+  "*claim your nitro*",
+  "*get free nitro*",
+  "*free steam gift*",
+  "*steam gift card*",
+  "*nitro for free*",
+  "*discord nitro free*",
+  "*free @everyone nitro*",
+];
+const CRYPTO_KW = [
+  "*free crypto*",
+  "*crypto giveaway*",
+  "*bitcoin giveaway*",
+  "*eth giveaway*",
+  "*airdrop*",
+  "*claim your airdrop*",
+  "*connect your wallet*",
+  "*double your bitcoin*",
+  "*free bitcoin*",
+  "*nft giveaway*",
+  "*wallet drainer*",
+];
+const ADSPAM_KW = [
+  "*cheap boost*",
+  "*cheap boosts*",
+  "*cheap boosting*",
+  "*cheap nitro*",
+  "*boosting service*",
+  "*selling accounts*",
+  "*buy followers*",
+  "*sell nitro*",
+  "*dm me for promo*",
+  "*dm for cheap*",
+  "*server boosting cheap*",
+];
+
+const pick = (on, list) => (on ? list : []);
+
+// ── Rule builders ───────────────────────────────────────────────────────────
+// Each builder yields a rule's trigger metadata from config, or null when every
+// category feeding it is off (so the rule shouldn't exist). Six categories are
+// packed into three Keyword rules, keeping us to 3 of Discord's 6 Keyword slots
+// and leaving room for the server's own rules.
+export const RULE_BUILDERS = [
+  {
+    name: `${RULE_PREFIX}Invite Links`,
+    triggerType: Trigger.Keyword,
+    timeoutAllowed: true,
+    build: (cfg) =>
+      cfg.nativeInvites ? { keywordFilter: INVITE_KW, regexPatterns: INVITE_RX } : null,
+  },
+  {
+    name: `${RULE_PREFIX}Malicious Links`,
+    triggerType: Trigger.Keyword,
+    timeoutAllowed: true,
+    build: (cfg) => {
+      if (!cfg.nativeScamLinks && !cfg.nativeGrabbers) return null;
+      return {
+        keywordFilter: [...pick(cfg.nativeScamLinks, SCAM_KW), ...pick(cfg.nativeGrabbers, GRABBER_KW)],
+        regexPatterns: [...pick(cfg.nativeScamLinks, SCAM_RX), ...pick(cfg.nativeGrabbers, GRABBER_RX)],
+      };
+    },
+  },
+  {
+    name: `${RULE_PREFIX}Scam & Spam Text`,
+    triggerType: Trigger.Keyword,
+    timeoutAllowed: true,
+    build: (cfg) => {
+      const keywordFilter = [
+        ...pick(cfg.nativeNitroScams, NITRO_KW),
+        ...pick(cfg.nativeCryptoScams, CRYPTO_KW),
+        ...pick(cfg.nativeAdSpam, ADSPAM_KW),
+      ];
+      return keywordFilter.length ? { keywordFilter } : null;
+    },
+  },
+  {
     name: `${RULE_PREFIX}Mention Spam`,
     triggerType: Trigger.MentionSpam,
     timeoutAllowed: true,
-    triggerMetadata: (cfg) => ({
-      mentionTotalLimit: Math.max(1, Math.min(50, cfg.mentionLimit ?? 5)),
-      mentionRaidProtectionEnabled: true,
-    }),
+    build: (cfg) =>
+      cfg.nativeMentions
+        ? {
+            mentionTotalLimit: Math.max(1, Math.min(50, cfg.mentionLimit ?? 5)),
+            mentionRaidProtectionEnabled: true,
+          }
+        : null,
   },
-  nativeSpam: {
+  {
     name: `${RULE_PREFIX}Spam`,
     triggerType: Trigger.Spam,
     timeoutAllowed: false,
-    triggerMetadata: () => ({}),
+    build: (cfg) => (cfg.nativeSpam ? {} : null),
   },
-  nativePresets: {
+  {
     name: `${RULE_PREFIX}Profanity & Slurs`,
     triggerType: Trigger.KeywordPreset,
     timeoutAllowed: false,
-    triggerMetadata: () => ({
-      presets: [Preset.Profanity, Preset.Slurs],
-      allowList: [],
-    }),
+    build: (cfg) => (cfg.nativePresets ? { presets: [Preset.Profanity, Preset.Slurs], allowList: [] } : null),
   },
-};
+];
 
-export const RULE_KEYS = Object.keys(RULE_DEFS);
+// Trigger types Discord permits only ONE rule of per guild.
+export const SINGLETON_TRIGGERS = new Set([
+  Trigger.Spam,
+  Trigger.KeywordPreset,
+  Trigger.MentionSpam,
+]);
 
 // The action list for a rule: always block; alert when a channel is set; time
 // the offender out when enabled and the trigger supports it.
-export function buildActions(def, cfg) {
-  const actions = [
-    { type: Action.BlockMessage, metadata: { customMessage: BLOCK_MESSAGE } },
-  ];
+export function buildActions(builder, cfg) {
+  const actions = [{ type: Action.BlockMessage, metadata: { customMessage: BLOCK_MESSAGE } }];
   if (cfg.nativeAlert && cfg.nativeAlertChannelId) {
-    actions.push({
-      type: Action.SendAlertMessage,
-      metadata: { channel: cfg.nativeAlertChannelId },
-    });
+    actions.push({ type: Action.SendAlertMessage, metadata: { channel: cfg.nativeAlertChannelId } });
   }
-  if (cfg.nativeTimeout && def.timeoutAllowed) {
+  if (cfg.nativeTimeout && builder.timeoutAllowed) {
     actions.push({
       type: Action.Timeout,
       metadata: {
@@ -187,54 +216,49 @@ export function buildActions(def, cfg) {
 }
 
 function toIdArray(value, max) {
-  const arr = Array.isArray(value) ? value : [];
-  return arr.slice(0, max);
+  return (Array.isArray(value) ? value : []).slice(0, max);
 }
 
-// The full create payload for one rule key, drawn from the guild's config. When
-// replacing an existing KeywordPreset rule, its presets are unioned with ours so
-// the server keeps any protection it already had.
-export function buildRuleDefinition(key, cfg, existingRule = null) {
-  const def = RULE_DEFS[key];
-  if (!def) return null;
-  const triggerMetadata = def.triggerMetadata(cfg);
-  if (def.triggerType === Trigger.KeywordPreset && existingRule?.triggerMetadata?.presets?.length) {
-    triggerMetadata.presets = [
-      ...new Set([...existingRule.triggerMetadata.presets, ...(triggerMetadata.presets ?? [])]),
-    ];
+// The full create payload for a builder, or null if the rule shouldn't exist.
+// When replacing a KeywordPreset rule, its presets are unioned with ours.
+export function buildRuleDefinition(builder, cfg, existingRule = null) {
+  const meta = builder.build(cfg);
+  if (!meta) return null;
+  let triggerMetadata = meta;
+  if (builder.triggerType === Trigger.KeywordPreset && existingRule?.triggerMetadata?.presets?.length) {
+    triggerMetadata = {
+      ...meta,
+      presets: [...new Set([...existingRule.triggerMetadata.presets, ...(meta.presets ?? [])])],
+    };
   }
   return {
-    name: def.name,
+    name: builder.name,
     eventType: Event.MessageSend,
-    triggerType: def.triggerType,
+    triggerType: builder.triggerType,
     triggerMetadata,
-    actions: buildActions(def, cfg),
+    actions: buildActions(builder, cfg),
     enabled: true,
     exemptRoles: toIdArray(cfg.exemptRoles, 20),
     exemptChannels: toIdArray(cfg.exemptChannels, 50),
   };
 }
 
-// Trigger types Discord permits only ONE rule of per guild. If such a rule
-// already exists (even one the server made), we must edit it rather than create
-// a second — a create would fail with AUTO_MODERATION_MAX_RULES_OF_TYPE_EXCEEDED.
-export const SINGLETON_TRIGGERS = new Set([
-  Trigger.Spam,
-  Trigger.KeywordPreset,
-  Trigger.MentionSpam,
-]);
-
-// Payload for editing an existing rule — the create payload minus the immutable
-// `triggerType` (Discord rejects changing it).
-export function buildEditPayload(key, cfg, existingRule) {
-  const base = buildRuleDefinition(key, cfg, existingRule);
+// Edit payload = create payload minus the immutable `triggerType`.
+export function buildEditPayload(builder, cfg, existingRule) {
+  const base = buildRuleDefinition(builder, cfg, existingRule);
   if (!base) return null;
-  delete base.triggerType; // immutable — Discord rejects changing it on edit
+  delete base.triggerType;
   return base;
 }
 
-// Which rule keys should exist given the current config. Empty when native
-// AutoMod is switched off — a sync then removes every rule we own.
+// The rule names we want to exist given the current config (empty if native
+// AutoMod is off — a sync then removes every rule we own).
+export function wantedRuleNames(cfg) {
+  if (!cfg.nativeEnabled) return new Set();
+  return new Set(RULE_BUILDERS.filter((b) => b.build(cfg)).map((b) => b.name));
+}
+
+// Category columns currently enabled — used by the panel/tests.
 export function desiredRuleKeys(cfg) {
   if (!cfg.nativeEnabled) return [];
   return RULE_KEYS.filter((key) => cfg[key]);
@@ -246,13 +270,45 @@ export function canManage(guild) {
   return Boolean(me?.permissions?.has(PermissionFlagsBits.ManageGuild));
 }
 
-// Reconcile the guild's AutoMod rules with the desired config: create missing
-// rules, edit existing ones, and delete rules we own that are no longer wanted.
-// Only touches rules whose name carries our prefix. Returns a result summary.
-export async function syncNativeRules({ guild, automod, logger }) {
-  if (!canManage(guild)) {
-    return { ok: false, reason: "missing_permission" };
+// Remove a rule: delete it, or — for rules Discord won't let us delete (e.g. a
+// community server's mention raid-protection) — disable it instead.
+async function removeRule(guild, rule, logger) {
+  try {
+    await rule.delete("Suzune AutoMod: rule disabled");
+    return true;
+  } catch {
+    try {
+      await rule.edit({ enabled: false });
+      return true;
+    } catch (err) {
+      logger?.warn?.({ err: err?.message, rule: rule.name }, "native automod: could not remove rule");
+      return false;
+    }
   }
+}
+
+// Apply a builder to an existing rule by editing it in place. If the edit fails
+// (a stale/orphaned rule can 404), reclaim the slot: delete then create fresh.
+async function editOrReplace(guild, rule, builder, cfg, logger) {
+  try {
+    await rule.edit(buildEditPayload(builder, cfg, rule));
+    return;
+  } catch (editErr) {
+    logger?.warn?.({ err: editErr?.message, rule: builder.name }, "native automod: edit failed, replacing");
+    try {
+      await rule.delete("Suzune AutoMod: replacing orphaned rule");
+    } catch {
+      // Undeletable or already gone — the slot may now be free.
+    }
+    await guild.autoModerationRules.create(buildRuleDefinition(builder, cfg, rule));
+  }
+}
+
+// Reconcile the guild's AutoMod rules with the desired config. Removes unwanted
+// rules first (freeing slots), then creates/edits/adopts wanted ones. Only ever
+// touches rules whose name carries our prefix, except to reuse a singleton slot.
+export async function syncNativeRules({ guild, automod, logger }) {
+  if (!canManage(guild)) return { ok: false, reason: "missing_permission" };
 
   let existing;
   try {
@@ -262,8 +318,6 @@ export async function syncNativeRules({ guild, automod, logger }) {
     return { ok: false, reason: "fetch_failed" };
   }
 
-  // Index existing rules two ways: our own by name (for reconcile) and every
-  // rule by trigger type (to detect the single slot Discord allows per type).
   const ours = new Map();
   const byTrigger = new Map();
   for (const rule of existing.values()) {
@@ -273,76 +327,49 @@ export async function syncNativeRules({ guild, automod, logger }) {
     byTrigger.set(rule.triggerType, list);
   }
 
-  const wanted = new Set(desiredRuleKeys(automod).map((k) => RULE_DEFS[k].name));
+  const wanted = wantedRuleNames(automod);
   const summary = { ok: true, created: 0, updated: 0, adopted: 0, removed: 0, failed: 0 };
 
-  const deleteQuietly = async (rule, reason) => {
-    try {
-      await rule.delete(reason);
-    } catch {
-      // Already gone or unmanageable — the slot is free either way.
-    }
-  };
+  // 1. Remove any rule we own that is no longer wanted — frees slots first so a
+  //    rename/consolidation doesn't transiently exceed the per-type cap.
+  for (const [name, rule] of ours) {
+    if (wanted.has(name)) continue;
+    if (await removeRule(guild, rule, logger)) summary.removed += 1;
+    else summary.failed += 1;
+  }
 
-  // Create, update, or adopt every wanted rule.
-  for (const key of desiredRuleKeys(automod)) {
-    const def = RULE_DEFS[key];
-    const current = ours.get(def.name);
-    // For singleton triggers, a pre-existing rule of that type (ours or the
-    // server's) occupies the one slot Discord allows — we reclaim it.
+  // 2. Create / edit / adopt every wanted rule.
+  for (const builder of RULE_BUILDERS) {
+    if (!wanted.has(builder.name)) continue;
+    const current = ours.get(builder.name);
     const conflict =
-      !current && SINGLETON_TRIGGERS.has(def.triggerType)
-        ? (byTrigger.get(def.triggerType) ?? [])[0]
+      !current && SINGLETON_TRIGGERS.has(builder.triggerType)
+        ? (byTrigger.get(builder.triggerType) ?? []).find((r) => !r.name?.startsWith(RULE_PREFIX))
         : null;
     try {
       if (current) {
-        // Edit our own rule; if it's since been deleted/orphaned (a PATCH 404),
-        // recreate it rather than failing the whole sync.
-        try {
-          await current.edit(buildEditPayload(key, automod, current));
-          summary.updated += 1;
-        } catch (editErr) {
-          logger?.warn?.(
-            { err: editErr?.message, rule: def.name },
-            "native automod: edit failed, recreating",
-          );
-          await deleteQuietly(current, "Suzune AutoMod: replacing orphaned rule");
-          await guild.autoModerationRules.create(buildRuleDefinition(key, automod, current));
-          summary.created += 1;
-        }
+        await editOrReplace(guild, current, builder, automod, logger);
+        summary.updated += 1;
       } else if (conflict) {
-        // Reclaim the single slot: some existing rules (e.g. Discord's built-in
-        // raid protection) aren't editable and 404 on PATCH, so we delete then
-        // create our own managed rule in its place.
-        await deleteQuietly(conflict, "Suzune AutoMod: replacing with a managed rule");
-        await guild.autoModerationRules.create(buildRuleDefinition(key, automod, conflict));
+        // Reuse the single slot by editing the server's existing rule in place
+        // (deleting isn't always allowed — e.g. community raid protection).
+        await editOrReplace(guild, conflict, builder, automod, logger);
         summary.adopted += 1;
       } else {
-        await guild.autoModerationRules.create(buildRuleDefinition(key, automod));
+        await guild.autoModerationRules.create(buildRuleDefinition(builder, automod));
         summary.created += 1;
       }
     } catch (err) {
       summary.failed += 1;
-      logger?.warn?.({ err: err?.message, rule: def.name }, "native automod: rule sync failed");
-    }
-  }
-
-  // Remove any rule we own that is no longer wanted.
-  for (const [name, rule] of ours) {
-    if (wanted.has(name)) continue;
-    try {
-      await rule.delete("Suzune AutoMod: rule disabled");
-      summary.removed += 1;
-    } catch (err) {
-      summary.failed += 1;
-      logger?.warn?.({ err: err?.message, rule: name }, "native automod: delete failed");
+      logger?.warn?.({ err: err?.message, rule: builder.name }, "native automod: rule sync failed");
     }
   }
 
   return summary;
 }
 
-// Delete every AutoMod rule the bot provisioned in this guild.
+// Remove every AutoMod rule the bot provisioned in this guild (disabling any
+// that Discord won't let us delete).
 export async function removeNativeRules({ guild, logger }) {
   if (!canManage(guild)) return { ok: false, reason: "missing_permission" };
   let existing;
@@ -355,13 +382,8 @@ export async function removeNativeRules({ guild, logger }) {
   const summary = { ok: true, removed: 0, failed: 0 };
   for (const rule of existing.values()) {
     if (!rule.name?.startsWith(RULE_PREFIX)) continue;
-    try {
-      await rule.delete("Suzune AutoMod: rules removed");
-      summary.removed += 1;
-    } catch (err) {
-      summary.failed += 1;
-      logger?.error?.({ err, rule: rule.name }, "native automod: delete failed");
-    }
+    if (await removeRule(guild, rule, logger)) summary.removed += 1;
+    else summary.failed += 1;
   }
   return summary;
 }
