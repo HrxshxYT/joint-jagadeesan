@@ -109,6 +109,30 @@ export function buildRuleDefinition(key, cfg) {
   };
 }
 
+// Trigger types Discord permits only ONE rule of per guild. If such a rule
+// already exists (even one the server made), we must edit it rather than create
+// a second — a create would fail with AUTO_MODERATION_MAX_RULES_OF_TYPE_EXCEEDED.
+export const SINGLETON_TRIGGERS = new Set([
+  Trigger.Spam,
+  Trigger.KeywordPreset,
+  Trigger.MentionSpam,
+]);
+
+// Payload for editing an existing rule. `triggerType` is immutable on Discord's
+// side, so it's omitted. When adopting an existing KeywordPreset rule we union
+// its presets with ours, so the server keeps any protection it already had.
+export function buildEditPayload(key, cfg, existingRule) {
+  const base = buildRuleDefinition(key, cfg);
+  if (!base) return null;
+  const { triggerType, ...rest } = base;
+  if (triggerType === Trigger.KeywordPreset) {
+    const prior = existingRule?.triggerMetadata?.presets ?? [];
+    const merged = [...new Set([...prior, ...rest.triggerMetadata.presets])];
+    rest.triggerMetadata = { ...rest.triggerMetadata, presets: merged };
+  }
+  return rest;
+}
+
 // Which rule keys should exist given the current config. Empty when native
 // AutoMod is switched off — a sync then removes every rule we own.
 export function desiredRuleKeys(cfg) {
@@ -138,25 +162,41 @@ export async function syncNativeRules({ guild, automod, logger }) {
     return { ok: false, reason: "fetch_failed" };
   }
 
+  // Index existing rules two ways: our own by name (for reconcile) and every
+  // rule by trigger type (to detect the single slot Discord allows per type).
   const ours = new Map();
+  const byTrigger = new Map();
   for (const rule of existing.values()) {
     if (rule.name?.startsWith(RULE_PREFIX)) ours.set(rule.name, rule);
+    const list = byTrigger.get(rule.triggerType) ?? [];
+    list.push(rule);
+    byTrigger.set(rule.triggerType, list);
   }
 
   const wanted = new Set(desiredRuleKeys(automod).map((k) => RULE_DEFS[k].name));
-  const summary = { ok: true, created: 0, updated: 0, removed: 0, failed: 0 };
+  const summary = { ok: true, created: 0, updated: 0, adopted: 0, removed: 0, failed: 0 };
 
-  // Create or update every wanted rule.
+  // Create, update, or adopt every wanted rule.
   for (const key of desiredRuleKeys(automod)) {
     const def = RULE_DEFS[key];
-    const payload = buildRuleDefinition(key, automod);
     const current = ours.get(def.name);
+    // For singleton triggers, a pre-existing rule of that type (ours or the
+    // server's) is the one we must reuse — creating a second is rejected.
+    const conflict =
+      !current && SINGLETON_TRIGGERS.has(def.triggerType)
+        ? (byTrigger.get(def.triggerType) ?? [])[0]
+        : null;
     try {
       if (current) {
-        await current.edit(payload);
+        await current.edit(buildEditPayload(key, automod, current));
         summary.updated += 1;
+      } else if (conflict) {
+        // Adopt it: rename to our prefix and apply our config so we own it going
+        // forward (and can clean it up later).
+        await conflict.edit(buildEditPayload(key, automod, conflict));
+        summary.adopted += 1;
       } else {
-        await guild.autoModerationRules.create(payload);
+        await guild.autoModerationRules.create(buildRuleDefinition(key, automod));
         summary.created += 1;
       }
     } catch (err) {

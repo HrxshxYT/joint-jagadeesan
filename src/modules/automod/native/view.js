@@ -43,9 +43,11 @@ function summarizeSync(res) {
   const parts = [];
   if (res.created) parts.push(`${res.created} created`);
   if (res.updated) parts.push(`${res.updated} updated`);
+  if (res.adopted) parts.push(`${res.adopted} adopted`);
   if (res.removed) parts.push(`${res.removed} removed`);
   if (res.failed) parts.push(`${res.failed} failed`);
-  return `${EMOJIS.success} Synced — ${parts.length ? parts.join(", ") : "no changes"}.`;
+  const icon = res.failed ? EMOJIS.warn : EMOJIS.success;
+  return `${icon} Synced — ${parts.length ? parts.join(", ") : "no changes"}.`;
 }
 
 export function buildNativeEmbed(a, lastSync) {

@@ -4,10 +4,14 @@ import {
   AutoModerationActionType as Action,
 } from "discord.js";
 import {
+  AutoModerationRuleKeywordPresetType as Preset,
+} from "discord.js";
+import {
   RULE_PREFIX,
   RULE_KEYS,
   buildActions,
   buildRuleDefinition,
+  buildEditPayload,
   desiredRuleKeys,
   canManage,
   syncNativeRules,
@@ -77,6 +81,23 @@ describe("buildRuleDefinition", () => {
 
   it("returns null for an unknown key", () => {
     expect(buildRuleDefinition("nope", fullCfg())).toBeNull();
+  });
+});
+
+describe("buildEditPayload", () => {
+  it("omits the immutable triggerType", () => {
+    const p = buildEditPayload("nativeInvites", fullCfg());
+    expect(p.triggerType).toBeUndefined();
+    expect(p.name).toContain(RULE_PREFIX);
+    expect(p.actions.length).toBeGreaterThan(0);
+  });
+
+  it("unions existing keyword presets when adopting", () => {
+    const existing = { triggerMetadata: { presets: [Preset.SexualContent] } };
+    const p = buildEditPayload("nativePresets", fullCfg(), existing);
+    expect(p.triggerMetadata.presets).toEqual(
+      expect.arrayContaining([Preset.Profanity, Preset.Slurs, Preset.SexualContent]),
+    );
   });
 });
 
@@ -153,6 +174,26 @@ describe("syncNativeRules", () => {
     });
     expect(stale.delete).toHaveBeenCalledOnce();
     expect(res.removed).toBe(1);
+  });
+
+  it("adopts an existing singleton rule instead of creating a duplicate", async () => {
+    // Guild already has a MentionSpam rule (type 5) the server made — Discord
+    // allows only one, so sync must edit it, not create a second.
+    const foreignMention = {
+      name: "Server Mention Guard",
+      triggerType: Trigger.MentionSpam,
+      edit: vi.fn(),
+      delete: vi.fn(),
+    };
+    const g = guild({ rules: [foreignMention] });
+    const res = await syncNativeRules({ guild: g, automod: fullCfg() });
+    expect(foreignMention.edit).toHaveBeenCalledOnce();
+    expect(res.adopted).toBe(1);
+    // Invites, spam, presets still created; mentions adopted, so not created.
+    expect(res.created).toBe(RULE_KEYS.length - 1);
+    expect(g.autoModerationRules.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({ triggerType: Trigger.MentionSpam }),
+    );
   });
 
   it("never touches rules the server made by hand", async () => {
