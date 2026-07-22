@@ -28,6 +28,14 @@ export const EMOJIS = {
   prev: "◀️",
 };
 
+// Public links surfaced in the onboarding message and elsewhere. Env vars win
+// so a fork can rebrand without touching source; the defaults are the live URLs.
+export const LINKS = {
+  support: process.env.SUPPORT_SERVER_URL || "https://discord.gg/kBtwmBsr6B",
+  ownerServer: process.env.OWNER_SERVER_URL || "https://discord.gg/QEykkuk6Gq",
+  uptime: process.env.UPTIME_URL || "https://stats.uptimerobot.com/0Ah1eJjOBW",
+};
+
 export const LIMITS = {
   embedDescription: 4096,
   embedFieldValue: 1024,
