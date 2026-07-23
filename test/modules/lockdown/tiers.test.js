@@ -8,6 +8,7 @@ import {
 import {
   applyPanic,
   applyChannels,
+  applyVoice,
   applyInvites,
   applyJoins,
 } from "../../../src/modules/lockdown/tiers.js";
@@ -21,10 +22,30 @@ function everyoneRole() {
   };
 }
 
-function textChannel(id) {
+// `overwrites` mirrors snapshot.test.js's fakeChannel style: a map of
+// holderId -> { allow, deny } bitfield resolvables, pre-seeding the
+// channel's permissionOverwrites.cache so tests can assert against an
+// already-existing explicit overwrite.
+function textChannel(id, overwrites = {}) {
+  const cache = new Map();
+  for (const [holderId, { allow = 0n, deny = 0n } = {}] of Object.entries(overwrites)) {
+    cache.set(holderId, {
+      id: holderId,
+      allow: new PermissionsBitField(allow),
+      deny: new PermissionsBitField(deny),
+    });
+  }
   return {
     id,
     type: ChannelType.GuildText,
+    permissionOverwrites: { cache, edit: vi.fn(async () => {}) },
+  };
+}
+
+function voiceChannel(id) {
+  return {
+    id,
+    type: ChannelType.GuildVoice,
     permissionOverwrites: { cache: new Map(), edit: vi.fn(async () => {}) },
   };
 }
@@ -83,6 +104,47 @@ describe("tiers", () => {
     // staff-bypass snapshot is flagged addedByUs (prior was neutral)
     const modSnap = res.snapshots.find((s) => s.targetId === "mod");
     expect(modSnap.addedByUs).toBe(true);
+    expect(res.failed).toEqual([]);
+  });
+
+  it("channels leaves addedByUs false when the mod role already had an explicit allow", async () => {
+    // Mod role already has an explicit SendMessages allow before the lockdown runs.
+    const c1 = textChannel("c1", {
+      mod: { allow: PermissionFlagsBits.SendMessages },
+    });
+    const guild = fakeGuild({ channels: [c1] });
+    const res = await applyChannels(guild, {
+      channelIds: ["c1"],
+      modRoleIds: ["mod"],
+      reason: "raid",
+    });
+
+    const modSnap = res.snapshots.find((s) => s.targetId === "mod");
+    expect(modSnap.priorAllow).toBe(true);
+    expect(modSnap.addedByUs).toBe(false);
+  });
+
+  it("voice denies @everyone and adds a staff-bypass allow for Connect and Speak", async () => {
+    const v1 = voiceChannel("v1");
+    const guild = fakeGuild({ channels: [v1] });
+    const res = await applyVoice(guild, {
+      channelIds: ["v1"],
+      modRoleIds: ["mod"],
+      reason: "raid",
+    });
+
+    // @everyone denied on both fields
+    expect(v1.permissionOverwrites.edit).toHaveBeenCalledWith(
+      "everyone",
+      { Connect: false, Speak: false },
+      { reason: "raid" },
+    );
+    // mod role allowed on both fields
+    expect(v1.permissionOverwrites.edit).toHaveBeenCalledWith(
+      "mod",
+      { Connect: true, Speak: true },
+      { reason: "raid" },
+    );
     expect(res.failed).toEqual([]);
   });
 
