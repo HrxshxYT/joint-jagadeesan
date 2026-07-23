@@ -94,8 +94,9 @@ model LockdownSnapshot {
   id         String        @id @default(cuid())
   lockdownId String
   lockdown   LockdownState @relation(fields: [lockdownId], references: [id], onDelete: Cascade)
-  targetType String        // channel|role|guild
-  targetId   String
+  targetType String        // "channel" = channel permission overwrite; "role" = guild-level role permission (panic)
+  channelId  String?       // where the overwrite lives; null for role-level (panic)
+  targetId   String        // the overwrite HOLDER: the role/member the overwrite or role-permission applies to
   field      String        // SendMessages | Connect | Speak
   priorAllow Boolean       // tri-state encoding:
   priorDeny  Boolean       //   allow → (true,false)  deny → (false,true)  neutral → (false,false)
