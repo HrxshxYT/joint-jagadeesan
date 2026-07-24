@@ -23,6 +23,11 @@ export async function processMemberAdd({ member, guildConfig, state, deps, logge
     },
     logger,
   );
+  if (antinuke.autoLockOnTrigger && deps.lockdownPanic) {
+    await deps
+      .lockdownPanic(member.guild, "Anti-raid: join spike auto-lock")
+      .catch((err) => logger?.error?.({ err }, "auto-lock panic failed"));
+  }
   return { action: "raid", count };
 }
 
@@ -34,6 +39,9 @@ export default {
       const deps = {
         kickMember: (m, reason) => m.kick(reason).catch(() => {}),
         sendAlert,
+        lockdownPanic: ctx.lockdown
+          ? (guild, reason) => ctx.lockdown.panic(guild, { reason, actorId: "system" })
+          : null,
       };
       const result = await processMemberAdd({
         member,

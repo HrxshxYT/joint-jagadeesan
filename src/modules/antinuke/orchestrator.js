@@ -72,6 +72,12 @@ export async function processAuditEntry({ entry, guild, guildConfig, state, deps
     logger,
   );
 
+  if (antinuke.autoLockOnTrigger && deps.lockdownPanic) {
+    await deps
+      .lockdownPanic(guild, `Anti-nuke: ${mapped.actionKey} auto-lock`)
+      .catch((err) => logger?.error?.({ err }, "auto-lock panic failed"));
+  }
+
   return { action: "punished", punishment, count };
 }
 
@@ -85,6 +91,9 @@ export default {
         applyPunishment,
         revertAction,
         sendAlert,
+        lockdownPanic: ctx.lockdown
+          ? (g, reason) => ctx.lockdown.panic(g, { reason, actorId: "system" })
+          : null,
       };
       const result = await processAuditEntry({
         entry,
