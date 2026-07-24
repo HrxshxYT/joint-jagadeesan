@@ -1,5 +1,5 @@
 import { EmbedBuilder } from "discord.js";
-import { COLORS } from "../../lib/constants.js";
+import { COLORS, BOT_NAME } from "../../lib/constants.js";
 import { brandEmbed } from "../../lib/embeds.js";
 import { formatDuration } from "../../lib/duration.js";
 
@@ -27,6 +27,7 @@ export function lockResultEmbed({ tier, reason, actorId, durationMs, counts = {}
     .setColor(COLORS.brand)
     .setTitle("🔒 Server locked down")
     .addFields(fields)
+    .setFooter({ text: BOT_NAME })
     .setTimestamp();
 }
 
@@ -41,6 +42,7 @@ export function unlockResultEmbed({ actorId, counts = {}, failed = [] }) {
     .setColor(COLORS.success)
     .setTitle("🔓 Lockdown lifted")
     .addFields(fields)
+    .setFooter({ text: BOT_NAME })
     .setTimestamp();
 }
 
