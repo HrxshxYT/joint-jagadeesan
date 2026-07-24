@@ -100,6 +100,7 @@ export class LockdownService {
         priorVerificationLevel: acc.priorVerificationLevel,
         invitesPausedByUs: acc.invitesPausedByUs,
         status: "active",
+        snapshotCount: acc.snapshots.length,
       },
     });
 
@@ -138,11 +139,15 @@ export class LockdownService {
     if (!state || state.status !== "active") return { ok: false, reason: "none" };
 
     const snapshots = state.snapshots ?? [];
-    // A tier that must have overwrite/role snapshots but has none is corrupt —
-    // refuse rather than guess. (invites/joins carry state fields, not snapshots.)
-    const needsSnapshots = ["panic", "channels", "voice", "full"].includes(state.tier);
-    if (needsSnapshots && snapshots.length === 0) {
-      this.logger?.error?.({ guildId: guild.id, tier: state.tier }, "lockdown snapshot missing/corrupt");
+    const expected = state.snapshotCount ?? 0;
+    // Corrupt only if we recorded taking snapshots but they are now gone — don't guess.
+    // (A bare voice/channels lockdown on a guild with no matching channels legitimately
+    // takes zero snapshots, so we must not key this off the tier alone.)
+    if (expected > 0 && snapshots.length === 0) {
+      this.logger?.error?.(
+        { guildId: guild.id, tier: state.tier, expected },
+        "lockdown snapshot missing/corrupt",
+      );
       return { ok: false, reason: "corrupt", state };
     }
 

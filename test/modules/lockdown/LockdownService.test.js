@@ -82,7 +82,8 @@ function fakeGuild({ id = "g1", channels = [] } = {}) {
 describe("LockdownService", () => {
   it("channels lock persists state + snapshots and creates a case", async () => {
     const prisma = fakePrisma();
-    const svc = new LockdownService({ prisma, logger: console, cases: fakeCases() });
+    const cases = fakeCases();
+    const svc = new LockdownService({ prisma, logger: console, cases });
     const guild = fakeGuild({ channels: [textChannel("c1")] });
 
     const res = await svc.start({
@@ -98,6 +99,9 @@ describe("LockdownService", () => {
     expect(prisma.lockdownSnapshot.createMany).toHaveBeenCalled();
     const state = prisma._states.get("g1");
     expect(state.snapshots.some((s) => s.channelId === "c1")).toBe(true);
+    expect(cases.createCase).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "lockdown", targetId: "admin" }),
+    );
   });
 
   it("is idempotent: a second start while active does not re-snapshot", async () => {
@@ -126,6 +130,7 @@ describe("LockdownService", () => {
         status: "active",
         invitesPausedByUs: false,
         priorVerificationLevel: null,
+        snapshotCount: 1,
         snapshots: [
           {
             targetType: "channel",
@@ -139,13 +144,44 @@ describe("LockdownService", () => {
         ],
       },
     });
-    const svc = new LockdownService({ prisma, logger: console, cases: fakeCases() });
+    const cases = fakeCases();
+    const svc = new LockdownService({ prisma, logger: console, cases });
 
     const res = await svc.unlock({ guild, actorId: "admin" });
 
     expect(res.ok).toBe(true);
     // neutral restored to null, NOT allow
     expect(editSpy).toHaveBeenCalledWith("everyone", { SendMessages: null }, { reason: "Lockdown lifted" });
+    expect(prisma.lockdownState.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "lifted" }) }),
+    );
+    expect(cases.createCase).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "unlockserver" }),
+    );
+  });
+
+  it("unlock lifts cleanly when the tier locked zero targets", async () => {
+    // A bare voice/channels lockdown on a guild with no matching channels legitimately
+    // takes zero snapshots — this must NOT be mistaken for corruption.
+    const guild = fakeGuild();
+    const prisma = fakePrisma({
+      state: {
+        id: "L1",
+        guildId: "g1",
+        tier: "voice",
+        status: "active",
+        invitesPausedByUs: false,
+        priorVerificationLevel: null,
+        snapshotCount: 0,
+        snapshots: [],
+      },
+    });
+    const svc = new LockdownService({ prisma, logger: console, cases: fakeCases() });
+
+    const res = await svc.unlock({ guild, actorId: "admin" });
+
+    expect(res.ok).toBe(true);
+    expect(res.reason).not.toBe("corrupt");
     expect(prisma.lockdownState.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: "lifted" }) }),
     );
@@ -161,7 +197,14 @@ describe("LockdownService", () => {
 
   it("refuses to unlock a corrupt snapshot set instead of guessing", async () => {
     const prisma = fakePrisma({
-      state: { id: "L1", guildId: "g1", tier: "channels", status: "active", snapshots: [] },
+      state: {
+        id: "L1",
+        guildId: "g1",
+        tier: "channels",
+        status: "active",
+        snapshotCount: 2,
+        snapshots: [],
+      },
     });
     const svc = new LockdownService({ prisma, logger: console, cases: fakeCases() });
     const res = await svc.unlock({ guild: fakeGuild(), actorId: "a" });
@@ -189,6 +232,7 @@ describe("LockdownService", () => {
         status: "active",
         invitesPausedByUs: false,
         priorVerificationLevel: null,
+        snapshotCount: 2,
         snapshots: [
           { targetType: "channel", channelId: "good", targetId: "everyone", field: "SendMessages", priorAllow: false, priorDeny: false, addedByUs: false },
           { targetType: "channel", channelId: "bad", targetId: "everyone", field: "SendMessages", priorAllow: false, priorDeny: false, addedByUs: false },
@@ -200,9 +244,15 @@ describe("LockdownService", () => {
     const res = await svc.unlock({ guild, actorId: "admin" });
 
     expect(goodEdit).toHaveBeenCalled();
+    expect(res.ok).toBe(false);
+    expect(res.reason).toBe("partial");
     expect(res.failed).toHaveLength(1);
     // partial failure -> snapshots NOT deleted, still restorable
     expect(prisma.lockdownSnapshot.deleteMany).not.toHaveBeenCalled();
+    // status kept "active" so the admin can re-run /unlockserver
+    expect(prisma.lockdownState.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "active" }) }),
+    );
   });
 
   it("staff-bypass allow is removed on unlock only where addedByUs", async () => {
@@ -230,5 +280,17 @@ describe("LockdownService", () => {
     expect(editSpy).toHaveBeenCalledWith("modAdded", { SendMessages: null }, { reason: "Lockdown lifted" });
     // pre-existing allow -> restored to allow (kept)
     expect(editSpy).toHaveBeenCalledWith("modHad", { SendMessages: true }, { reason: "Lockdown lifted" });
+  });
+
+  it("panic() starts a panic-tier lockdown", async () => {
+    const prisma = fakePrisma();
+    const svc = new LockdownService({ prisma, logger: console, cases: fakeCases() });
+    const guild = fakeGuild({ channels: [textChannel("c1")] });
+
+    const res = await svc.panic(guild, { reason: "raid", actorId: "admin" });
+
+    expect(res.ok).toBe(true);
+    const state = prisma._states.get("g1");
+    expect(state.tier).toBe("panic");
   });
 });

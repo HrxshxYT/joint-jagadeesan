@@ -345,6 +345,7 @@ model LockdownState {
   invitesPausedByUs      Boolean            @default(false)
   caseNumber             Int?
   status                 String             @default("active") // active|lifted|failed
+  snapshotCount          Int                @default(0)
   snapshots              LockdownSnapshot[]
 
   @@index([expiresAt])
