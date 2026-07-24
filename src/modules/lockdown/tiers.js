@@ -47,6 +47,8 @@ async function applyOverwriteDeny(guild, { channelIds, modRoleIds, fields, reaso
       const rows = fields.map((field) => {
         const snap = snapshotChannelField(channel, roleId, field);
         const prior = readOverwrite(channel, roleId, field);
+        // Diagnostic only — restore is driven entirely by the captured tri-state
+        // (priorAllow/priorDeny), not by this flag.
         snap.addedByUs = !prior.priorAllow; // we granted an allow it didn't already have
         return snap;
       });

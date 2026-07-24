@@ -17,7 +17,14 @@ export async function sweepExpiredLockdowns({
     if (!guild) continue; // another shard owns it, or the bot was removed
     try {
       const res = await lockdown.unlock({ guild, actorId: "system", reason: "Lockdown expired" });
-      if (res.ok) unlocked++;
+      if (res.ok) {
+        unlocked++;
+      } else {
+        logger?.warn?.(
+          { guildId: state.guildId, reason: res.reason },
+          "expired lockdown could not be auto-unlocked",
+        );
+      }
     } catch (err) {
       logger?.error?.({ err, guildId: state.guildId }, "failed to auto-unlock expired lockdown");
     }

@@ -90,25 +90,33 @@ export class LockdownService {
       await this.#applyTier(t, guild, opts, acc);
     }
 
-    const state = await this.prisma.lockdownState.create({
-      data: {
-        guildId: guild.id,
-        tier,
-        reason,
-        startedById: actorId,
-        expiresAt: durationMs ? new Date(Date.now() + durationMs) : null,
-        priorVerificationLevel: acc.priorVerificationLevel,
-        invitesPausedByUs: acc.invitesPausedByUs,
-        status: "active",
-        snapshotCount: acc.snapshots.length,
-      },
-    });
-
-    if (acc.snapshots.length > 0) {
-      await this.prisma.lockdownSnapshot.createMany({
-        data: acc.snapshots.map((s) => ({ ...s, lockdownId: state.id })),
+    // Persist state + snapshots atomically: if createMany fails after create
+    // succeeds, an active state with snapshotCount>0 but zero rows would read
+    // back as "corrupt" while the guild is already mutated — a transaction
+    // makes that partial-write window impossible.
+    const state = await this.prisma.$transaction(async (tx) => {
+      const s = await tx.lockdownState.create({
+        data: {
+          guildId: guild.id,
+          tier,
+          reason,
+          startedById: actorId,
+          expiresAt: durationMs ? new Date(Date.now() + durationMs) : null,
+          priorVerificationLevel: acc.priorVerificationLevel,
+          invitesPausedByUs: acc.invitesPausedByUs,
+          status: "active",
+          snapshotCount: acc.snapshots.length,
+        },
       });
-    }
+
+      if (acc.snapshots.length > 0) {
+        await tx.lockdownSnapshot.createMany({
+          data: acc.snapshots.map((snap) => ({ ...snap, lockdownId: s.id })),
+        });
+      }
+
+      return s;
+    });
 
     let record = null;
     if (this.cases) {
@@ -168,7 +176,7 @@ export class LockdownService {
     }
     if (state.invitesPausedByUs) {
       await guild
-        .disableInvites(false, reason)
+        .disableInvites(false)
         .catch((error) => failed.push({ item: "invites", error }));
     }
 
@@ -182,11 +190,11 @@ export class LockdownService {
       return { ok: false, reason: "partial", state, failed };
     }
 
-    await this.prisma.lockdownState.update({
-      where: { id: state.id },
-      data: { status: "lifted" },
-    });
-    await this.prisma.lockdownSnapshot.deleteMany({ where: { lockdownId: state.id } });
+    // Full success: delete the state row entirely (FK cascade removes its
+    // snapshots) rather than marking it "lifted". guildId is @unique, so a
+    // lifted-but-not-deleted row would permanently block re-locking that
+    // guild with a P2002 unique violation on the next start().
+    await this.prisma.lockdownState.delete({ where: { id: state.id } });
 
     if (this.cases) {
       await this.cases.createCase({

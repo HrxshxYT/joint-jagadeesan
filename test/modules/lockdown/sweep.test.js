@@ -30,6 +30,31 @@ describe("sweepExpiredLockdowns", () => {
     expect(unlock).toHaveBeenCalledTimes(1);
   });
 
+  it("logs and does not count a corrupt/partial expired lockdown that could not be auto-unlocked", async () => {
+    const past = new Date(Date.now() - 60_000);
+    const due = [{ id: "L1", guildId: "g1", expiresAt: past, status: "active" }];
+    const prisma = {
+      lockdownState: {
+        findMany: vi.fn(async () => due),
+      },
+    };
+    const guild = { id: "g1" };
+    const client = { guilds: { cache: new Map([["g1", guild]]) } };
+    const unlock = vi.fn(async () => ({ ok: false, reason: "corrupt" }));
+    const lockdown = { unlock };
+    const logger = { warn: vi.fn(), error: vi.fn(), info: vi.fn() };
+
+    const count = await sweepExpiredLockdowns({ client, lockdown, prisma, logger });
+
+    expect(count).toBe(0);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ guildId: "g1", reason: "corrupt" }),
+      expect.any(String),
+    );
+    // guild is still visible in cache / still stuck active — nothing was silently swallowed
+    expect(client.guilds.cache.has("g1")).toBe(true);
+  });
+
   it("skips guilds the shard cannot see", async () => {
     const past = new Date(Date.now() - 60_000);
     const prisma = {

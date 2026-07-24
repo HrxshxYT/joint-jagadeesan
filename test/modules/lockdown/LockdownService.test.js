@@ -7,7 +7,7 @@ function fakePrisma(seed = {}) {
   const states = new Map(); // guildId -> state (with snapshots array)
   if (seed.state) states.set(seed.state.guildId, seed.state);
   let idc = 0;
-  return {
+  const prisma = {
     _states: states,
     lockdownState: {
       findUnique: vi.fn(async ({ where }) => {
@@ -24,6 +24,13 @@ function fakePrisma(seed = {}) {
         );
       }),
       create: vi.fn(async ({ data }) => {
+        // guildId is @unique in the real schema — mirror the P2002 a live
+        // Postgres would raise so a stale un-deleted row is caught by tests.
+        if (states.has(data.guildId)) {
+          const e = new Error("Unique constraint failed on the fields: (`guildId`)");
+          e.code = "P2002";
+          throw e;
+        }
         const state = { id: `L${++idc}`, snapshots: [], ...data };
         states.set(data.guildId, state);
         return state;
@@ -32,6 +39,11 @@ function fakePrisma(seed = {}) {
         const s = [...states.values()].find((x) => x.id === where.id) ?? states.get(where.guildId);
         Object.assign(s, data);
         return s;
+      }),
+      delete: vi.fn(async ({ where }) => {
+        const s = [...states.values()].find((x) => x.id === where.id);
+        if (s) states.delete(s.guildId);
+        return s ?? null;
       }),
     },
     lockdownSnapshot: {
@@ -47,6 +59,10 @@ function fakePrisma(seed = {}) {
       }),
     },
   };
+  // Interactive-transaction style: run the callback against this same mock so
+  // its lockdownState/lockdownSnapshot calls are visible to assertions.
+  prisma.$transaction = vi.fn(async (fn) => fn(prisma));
+  return prisma;
 }
 
 function fakeCases() {
@@ -166,9 +182,9 @@ describe("LockdownService", () => {
       { SendMessages: null },
       { reason: "Lockdown lifted" },
     );
-    expect(prisma.lockdownState.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: "lifted" }) }),
-    );
+    // full success deletes the state row (guildId is @unique — leaving a
+    // "lifted" row behind would permanently block re-locking this guild)
+    expect(prisma.lockdownState.delete).toHaveBeenCalledWith({ where: { id: "L1" } });
     expect(cases.createCase).toHaveBeenCalledWith(
       expect.objectContaining({ type: "unlockserver" }),
     );
@@ -196,9 +212,7 @@ describe("LockdownService", () => {
 
     expect(res.ok).toBe(true);
     expect(res.reason).not.toBe("corrupt");
-    expect(prisma.lockdownState.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: "lifted" }) }),
-    );
+    expect(prisma.lockdownState.delete).toHaveBeenCalledWith({ where: { id: "L1" } });
   });
 
   it("refuses to unlock when there is no active lockdown", async () => {
@@ -354,5 +368,45 @@ describe("LockdownService", () => {
     expect(res.ok).toBe(true);
     const state = prisma._states.get("g1");
     expect(state.tier).toBe("panic");
+  });
+
+  it("can be re-locked after a full unlock (regression: guildId unique constraint)", async () => {
+    // Prior bug: unlock() only marked status "lifted" and never deleted the
+    // LockdownState row. Since guildId is @unique, the next start() would hit
+    // a P2002 on create() after already mutating the guild, stranding it
+    // locked with no persisted state. fakePrisma.create() now throws a
+    // P2002-like error on a duplicate guildId, so this test fails loudly if
+    // the regression comes back.
+    const prisma = fakePrisma();
+    const svc = new LockdownService({ prisma, logger: console, cases: fakeCases() });
+    const editSpy = vi.fn(async () => {});
+    const guild = fakeGuild({ channels: [textChannel("c1", editSpy)] });
+
+    const first = await svc.start({
+      guild,
+      tier: "channels",
+      reason: "raid",
+      actorId: "admin",
+      modRoleIds: [],
+    });
+    expect(first.ok).toBe(true);
+
+    const unlockRes = await svc.unlock({ guild, actorId: "admin" });
+    expect(unlockRes.ok).toBe(true);
+    expect(prisma._states.has("g1")).toBe(false); // row fully removed, not just "lifted"
+
+    const second = await svc.start({
+      guild,
+      tier: "channels",
+      reason: "raid again",
+      actorId: "admin",
+      modRoleIds: [],
+    });
+
+    expect(second.ok).toBe(true);
+    expect(second.state.tier).toBe("channels");
+    const state = prisma._states.get("g1");
+    expect(state.status).toBe("active");
+    expect(state.snapshots.some((s) => s.channelId === "c1")).toBe(true);
   });
 });
