@@ -1,3 +1,5 @@
+import { sweepExpiredLockdowns } from "../lockdown/sweep.js";
+
 export async function sweepExpired({ client, caseService, logger, now = new Date() }) {
   const due = await caseService.dueExpired(now);
   for (const record of due) {
@@ -16,7 +18,19 @@ export async function sweepExpired({ client, caseService, logger, now = new Date
 }
 
 export function registerExpiryJob(context) {
-  context.scheduler.every("* * * * *", "mod-expiry", () =>
-    sweepExpired({ client: context.client, caseService: context.cases, logger: context.logger }),
-  );
+  context.scheduler.every("* * * * *", "mod-expiry", async () => {
+    await sweepExpired({
+      client: context.client,
+      caseService: context.cases,
+      logger: context.logger,
+    });
+    if (context.lockdown) {
+      await sweepExpiredLockdowns({
+        client: context.client,
+        lockdown: context.lockdown,
+        prisma: context.prisma,
+        logger: context.logger,
+      });
+    }
+  });
 }
