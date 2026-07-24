@@ -26,6 +26,7 @@ import { TicketService } from "./modules/tickets/TicketService.js";
 import { WatchVcService } from "./modules/watchvc/WatchVcService.js";
 import { realDeps as watchVcDeps } from "./modules/watchvc/deps.js";
 import { DashboardService } from "./modules/dashboard/DashboardService.js";
+import { LockdownService } from "./modules/lockdown/LockdownService.js";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -103,6 +104,7 @@ export async function startBot() {
     scheduler: new Scheduler({ cron, logger }),
     antinuke: new AntinukeState(),
     cases: new CaseService(prisma),
+    lockdown: null, // set below, needs cases
     invites: new InviteService(prisma),
     inviteCache: new InviteCache(),
     automod: new AutomodState(),
@@ -112,6 +114,8 @@ export async function startBot() {
     watchvc: new WatchVcService({ client, logger, config, deps: watchVcDeps(client) }),
     dashboards: new DashboardService({ logger, prisma, refreshMs: 90_000 }),
   };
+
+  context.lockdown = new LockdownService({ prisma, logger, cases: context.cases });
 
   bindEvents(client, listeners, context);
   registerExpiryJob(context);
