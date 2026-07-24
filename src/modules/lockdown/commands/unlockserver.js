@@ -36,7 +36,9 @@ export default {
       await interaction.editReply({
         embeds: [
           unlockResultEmbed({ actorId: interaction.user.id, counts: {}, failed: res.failed }),
-          warnEmbed("Some channels could not be restored — fix my permissions and run `/unlockserver` again."),
+          warnEmbed(
+            "Some channels could not be restored — fix my permissions and run `/unlockserver` again.",
+          ),
         ],
       });
       return;

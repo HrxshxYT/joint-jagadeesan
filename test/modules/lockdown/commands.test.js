@@ -67,7 +67,13 @@ describe("lockserver status subcommand", () => {
       deferReply,
       editReply,
     };
-    const active = { tier: "channels", status: "active", startedById: "admin", startedAt: new Date(), reason: "r" };
+    const active = {
+      tier: "channels",
+      status: "active",
+      startedById: "admin",
+      startedAt: new Date(),
+      reason: "r",
+    };
     const ctx = {
       logger: console,
       lockdown: {

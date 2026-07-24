@@ -52,6 +52,36 @@ action trigger. Anti-raid detects join spikes and kicks new joiners during a rai
 (Ban/Kick/Manage Roles) and a role positioned **above** the members it must act on. Detection is
 audit-log driven, so it is near-real-time, not instant.
 
+## Server Lockdown
+
+`/lockserver` is a server-wide lockdown with **exact-state restore**. Unlike the
+per-channel `/lockdown`, it snapshots the precise prior state of every permission
+overwrite it touches — allow, deny, or neutral (unset) — to Postgres, then restores
+exactly that on `/unlockserver`. A neutral overwrite is restored to neutral, never
+silently converted to allow. Snapshots survive restarts; a lockdown mid-raid is
+never stranded.
+
+**Tiers** — `/lockserver <tier> [duration] [reason]`:
+
+- **panic** — strip `SendMessages` from `@everyone` guild-wide in one API call. Instant, deliberately imperfect (channels with an explicit allow survive) — during a live raid, speed beats completeness.
+- **channels** — deny sending across all text channels (or a chosen subset). Correct but N calls; batched with progress.
+- **invites** — pause server invites (the guild flag only — no invite links are deleted).
+- **joins** — raise verification level to maximum; the prior level is restored on unlock.
+- **voice** — deny `Connect`/`Speak` on voice channels.
+- **full** — panic → channels → invites → joins → voice, fastest protection first.
+
+**Behaviour:**
+
+- **Staff bypass** — configured mod roles (`/config modrole`) keep an explicit allow so staff can coordinate inside a locked server; it is removed on unlock only if the bot added it.
+- **Duration** — optional (`30m`, `2h`). Auto-unlock rides the existing once-per-minute sweep.
+- **Idempotent** — running `/lockserver` while a lockdown is active reports status instead of clobbering the snapshot; unlock first to change tiers.
+- **Partial failure** — channels the bot can't touch are reported; everything else still locks and stays fully restorable.
+- **Corruption-safe** — `/unlockserver` refuses and tells you to restore manually only when snapshots were recorded as taken but are now missing; a tier that legitimately locked zero targets still unlocks cleanly.
+- **Anti-nuke** — enable the opt-in `autoLockOnTrigger` config flag so a detected nuke or raid fires the panic tier automatically.
+- **Logging** — every lock/unlock is logged to the mod-actions category and the anti-nuke alert channel: who, tier, reason, duration, channel counts, and failures.
+
+`/lockserver status` shows the active tier, who started it, expiry, and whether invites were paused. Requires **Administrator** or **Manage Server**.
+
 ## Moderation
 
 A numbered per-guild case system backs every action. Commands (all permission-gated and

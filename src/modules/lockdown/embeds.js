@@ -5,7 +5,10 @@ import { formatDuration } from "../../lib/duration.js";
 
 function failList(failed = []) {
   if (!failed.length) return null;
-  const items = failed.slice(0, 10).map((f) => `\`${f.item}\``).join(", ");
+  const items = failed
+    .slice(0, 10)
+    .map((f) => `\`${f.item}\``)
+    .join(", ");
   const more = failed.length > 10 ? ` (+${failed.length - 10} more)` : "";
   return `${items}${more}`;
 }
@@ -14,7 +17,11 @@ export function lockResultEmbed({ tier, reason, actorId, durationMs, counts = {}
   const fields = [
     { name: "Tier", value: `\`${tier}\``, inline: true },
     { name: "By", value: `<@${actorId}>`, inline: true },
-    { name: "Duration", value: durationMs ? formatDuration(durationMs) : "until unlocked", inline: true },
+    {
+      name: "Duration",
+      value: durationMs ? formatDuration(durationMs) : "until unlocked",
+      inline: true,
+    },
     { name: "Reason", value: reason ?? "No reason provided" },
   ];
   if (counts.snapshots != null) {
@@ -59,8 +66,16 @@ export function statusEmbed(state) {
       { name: "Tier", value: `\`${state.tier}\``, inline: true },
       { name: "By", value: `<@${state.startedById}>`, inline: true },
       { name: "Expires", value: expires, inline: true },
-      { name: "Started", value: `<t:${Math.floor(new Date(state.startedAt).getTime() / 1000)}:f>`, inline: true },
-      { name: "Invites paused", value: state.invitesPausedByUs ? "yes (by us)" : "no", inline: true },
+      {
+        name: "Started",
+        value: `<t:${Math.floor(new Date(state.startedAt).getTime() / 1000)}:f>`,
+        inline: true,
+      },
+      {
+        name: "Invites paused",
+        value: state.invitesPausedByUs ? "yes (by us)" : "no",
+        inline: true,
+      },
       { name: "Reason", value: state.reason ?? "No reason provided" },
     ],
   });

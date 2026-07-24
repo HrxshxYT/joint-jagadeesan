@@ -11,12 +11,16 @@ function fakePrisma(seed = {}) {
     _states: states,
     lockdownState: {
       findUnique: vi.fn(async ({ where }) => {
-        const s = where.guildId ? states.get(where.guildId) : [...states.values()].find((x) => x.id === where.id);
+        const s = where.guildId
+          ? states.get(where.guildId)
+          : [...states.values()].find((x) => x.id === where.id);
         return s ?? null;
       }),
       findMany: vi.fn(async ({ where }) => {
         return [...states.values()].filter(
-          (s) => s.status === (where.status ?? s.status) && (!where.expiresAt || (s.expiresAt && s.expiresAt <= where.expiresAt.lte)),
+          (s) =>
+            s.status === (where.status ?? s.status) &&
+            (!where.expiresAt || (s.expiresAt && s.expiresAt <= where.expiresAt.lte)),
         );
       }),
       create: vi.fn(async ({ data }) => {
@@ -111,7 +115,13 @@ describe("LockdownService", () => {
     await svc.start({ guild, tier: "channels", reason: "r", actorId: "a", modRoleIds: [] });
 
     prisma.lockdownSnapshot.createMany.mockClear();
-    const second = await svc.start({ guild, tier: "channels", reason: "r", actorId: "a", modRoleIds: [] });
+    const second = await svc.start({
+      guild,
+      tier: "channels",
+      reason: "r",
+      actorId: "a",
+      modRoleIds: [],
+    });
 
     expect(second.ok).toBe(false);
     expect(second.alreadyActive).toBe(true);
@@ -151,7 +161,11 @@ describe("LockdownService", () => {
 
     expect(res.ok).toBe(true);
     // neutral restored to null, NOT allow
-    expect(editSpy).toHaveBeenCalledWith("everyone", { SendMessages: null }, { reason: "Lockdown lifted" });
+    expect(editSpy).toHaveBeenCalledWith(
+      "everyone",
+      { SendMessages: null },
+      { reason: "Lockdown lifted" },
+    );
     expect(prisma.lockdownState.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: "lifted" }) }),
     );
@@ -234,8 +248,24 @@ describe("LockdownService", () => {
         priorVerificationLevel: null,
         snapshotCount: 2,
         snapshots: [
-          { targetType: "channel", channelId: "good", targetId: "everyone", field: "SendMessages", priorAllow: false, priorDeny: false, addedByUs: false },
-          { targetType: "channel", channelId: "bad", targetId: "everyone", field: "SendMessages", priorAllow: false, priorDeny: false, addedByUs: false },
+          {
+            targetType: "channel",
+            channelId: "good",
+            targetId: "everyone",
+            field: "SendMessages",
+            priorAllow: false,
+            priorDeny: false,
+            addedByUs: false,
+          },
+          {
+            targetType: "channel",
+            channelId: "bad",
+            targetId: "everyone",
+            field: "SendMessages",
+            priorAllow: false,
+            priorDeny: false,
+            addedByUs: false,
+          },
         ],
       },
     });
@@ -267,9 +297,33 @@ describe("LockdownService", () => {
         invitesPausedByUs: false,
         priorVerificationLevel: null,
         snapshots: [
-          { targetType: "channel", channelId: "c1", targetId: "everyone", field: "SendMessages", priorAllow: false, priorDeny: false, addedByUs: false },
-          { targetType: "channel", channelId: "c1", targetId: "modAdded", field: "SendMessages", priorAllow: false, priorDeny: false, addedByUs: true },
-          { targetType: "channel", channelId: "c1", targetId: "modHad", field: "SendMessages", priorAllow: true, priorDeny: false, addedByUs: false },
+          {
+            targetType: "channel",
+            channelId: "c1",
+            targetId: "everyone",
+            field: "SendMessages",
+            priorAllow: false,
+            priorDeny: false,
+            addedByUs: false,
+          },
+          {
+            targetType: "channel",
+            channelId: "c1",
+            targetId: "modAdded",
+            field: "SendMessages",
+            priorAllow: false,
+            priorDeny: false,
+            addedByUs: true,
+          },
+          {
+            targetType: "channel",
+            channelId: "c1",
+            targetId: "modHad",
+            field: "SendMessages",
+            priorAllow: true,
+            priorDeny: false,
+            addedByUs: false,
+          },
         ],
       },
     });
@@ -277,9 +331,17 @@ describe("LockdownService", () => {
     await svc.unlock({ guild, actorId: "admin" });
 
     // addedByUs -> restored to null (removed)
-    expect(editSpy).toHaveBeenCalledWith("modAdded", { SendMessages: null }, { reason: "Lockdown lifted" });
+    expect(editSpy).toHaveBeenCalledWith(
+      "modAdded",
+      { SendMessages: null },
+      { reason: "Lockdown lifted" },
+    );
     // pre-existing allow -> restored to allow (kept)
-    expect(editSpy).toHaveBeenCalledWith("modHad", { SendMessages: true }, { reason: "Lockdown lifted" });
+    expect(editSpy).toHaveBeenCalledWith(
+      "modHad",
+      { SendMessages: true },
+      { reason: "Lockdown lifted" },
+    );
   });
 
   it("panic() starts a panic-tier lockdown", async () => {

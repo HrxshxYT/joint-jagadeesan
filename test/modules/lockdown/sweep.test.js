@@ -34,12 +34,19 @@ describe("sweepExpiredLockdowns", () => {
     const past = new Date(Date.now() - 60_000);
     const prisma = {
       lockdownState: {
-        findMany: vi.fn(async () => [{ id: "L1", guildId: "ghost", expiresAt: past, status: "active" }]),
+        findMany: vi.fn(async () => [
+          { id: "L1", guildId: "ghost", expiresAt: past, status: "active" },
+        ]),
       },
     };
     const client = { guilds: { cache: new Map() } };
     const unlock = vi.fn(async () => ({ ok: true }));
-    const count = await sweepExpiredLockdowns({ client, lockdown: { unlock }, prisma, logger: console });
+    const count = await sweepExpiredLockdowns({
+      client,
+      lockdown: { unlock },
+      prisma,
+      logger: console,
+    });
     expect(count).toBe(0);
     expect(unlock).not.toHaveBeenCalled();
   });

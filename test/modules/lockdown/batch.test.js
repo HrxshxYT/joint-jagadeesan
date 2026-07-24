@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { runBatched } from "../../../src/modules/lockdown/batch.js";
 
 describe("runBatched", () => {

@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { lockResultEmbed, unlockResultEmbed, statusEmbed } from "../../../src/modules/lockdown/embeds.js";
+import {
+  lockResultEmbed,
+  unlockResultEmbed,
+  statusEmbed,
+} from "../../../src/modules/lockdown/embeds.js";
 
 vi.mock("../../../src/modules/logging/dispatcher.js", () => ({
   logEvent: vi.fn(async () => true),
@@ -16,7 +20,10 @@ describe("lockdown embeds", () => {
       actorId: "admin",
       durationMs: 3_600_000,
       counts: { snapshots: 10, failed: 2 },
-      failed: [{ item: "bad", error: new Error("x") }, { item: "bad2", error: new Error("y") }],
+      failed: [
+        { item: "bad", error: new Error("x") },
+        { item: "bad2", error: new Error("y") },
+      ],
     }).toJSON();
     const text = JSON.stringify(e);
     expect(text).toContain("channels");
@@ -98,7 +105,9 @@ describe("emitLockdownLog", () => {
     };
     const ctx = { logger: { error: vi.fn() } };
 
-    await expect(emitLockdownLog(ctx, guild, embed, { alertChannelId: "alert-1" })).resolves.toBeUndefined();
+    await expect(
+      emitLockdownLog(ctx, guild, embed, { alertChannelId: "alert-1" }),
+    ).resolves.toBeUndefined();
 
     expect(ctx.logger.error).toHaveBeenCalledTimes(2);
   });

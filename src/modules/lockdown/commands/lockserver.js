@@ -13,7 +13,11 @@ function tierSub(sub, name, desc, { withChannels = false } = {}) {
       o
         .setName("channels")
         .setDescription("Limit to specific channels (optional)")
-        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.GuildForum),
+        .addChannelTypes(
+          ChannelType.GuildText,
+          ChannelType.GuildAnnouncement,
+          ChannelType.GuildForum,
+        ),
     );
   }
   sub.addStringOption((o) => o.setName("duration").setDescription("e.g. 30m, 2h (optional)"));
@@ -27,8 +31,12 @@ export default {
       .setName("lockserver")
       .setDescription("Server-wide lockdown with exact-state restore.")
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
-    b.addSubcommand((s) => tierSub(s, "panic", "Instantly strip @everyone SendMessages guild-wide."));
-    b.addSubcommand((s) => tierSub(s, "channels", "Deny sending across text channels.", { withChannels: true }));
+    b.addSubcommand((s) =>
+      tierSub(s, "panic", "Instantly strip @everyone SendMessages guild-wide."),
+    );
+    b.addSubcommand((s) =>
+      tierSub(s, "channels", "Deny sending across text channels.", { withChannels: true }),
+    );
     b.addSubcommand((s) => tierSub(s, "invites", "Pause server invites (no links deleted)."));
     b.addSubcommand((s) => tierSub(s, "joins", "Raise verification to maximum."));
     b.addSubcommand((s) => tierSub(s, "voice", "Deny Connect/Speak on voice channels."));

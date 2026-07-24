@@ -1,6 +1,12 @@
 // Auto-unlock expired lockdowns. Rides the existing once-per-minute mod-expiry
 // job (see src/modules/moderation/expiry.js) — no separate scheduler.
-export async function sweepExpiredLockdowns({ client, lockdown, prisma, logger, now = new Date() }) {
+export async function sweepExpiredLockdowns({
+  client,
+  lockdown,
+  prisma,
+  logger,
+  now = new Date(),
+}) {
   const due = await prisma.lockdownState.findMany({
     where: { status: "active", expiresAt: { not: null, lte: now } },
   });

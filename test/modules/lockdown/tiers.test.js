@@ -179,10 +179,7 @@ describe("tiers", () => {
     const guild = fakeGuild();
     const res = await applyJoins(guild, { reason: "x" });
     expect(res.priorVerificationLevel).toBe(GuildVerificationLevel.Low);
-    expect(guild.setVerificationLevel).toHaveBeenCalledWith(
-      GuildVerificationLevel.VeryHigh,
-      "x",
-    );
+    expect(guild.setVerificationLevel).toHaveBeenCalledWith(GuildVerificationLevel.VeryHigh, "x");
   });
 
   // --- Role snapshot round-trip coverage (carry-forward from Task 2 review) ---
